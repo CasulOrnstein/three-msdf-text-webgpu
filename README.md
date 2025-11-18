@@ -81,3 +81,7 @@ const textMesh = MSDFText.fromDomElement(
 ```
 
 Using this method also allows `mesh.alignWithElement(camera: THREE.Camera)` to be called which will update the transform of the mesh to align with the DOM element in the camera's view at a given depth (5 units by default).
+
+## Examples:
+
+See this [blog page](https://www.madewithdove.co.uk/blog/webgpu-text) for an example of the package in action.

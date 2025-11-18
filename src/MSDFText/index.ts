@@ -9,7 +9,7 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
   readonly element: HTMLElement | undefined
   
   constructor(metrics: DomTextMetrics, font: { atlas: THREE.Texture, data: BMFontJSON }) {
-    const isSmooth = metrics.fontCssStyles.fontSize < 32 ? 1 : 0;
+    const isSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
     
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
     const material = new MSDFTextNodeMaterial(font.atlas, { color: metrics.fontCssStyles.color, isSmooth })

@@ -19,16 +19,14 @@ export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
   constructor(options: { fontAtlas: THREE.Texture, metrics: DomTextMetrics, materialOptions?: Partial<MSDFTextNodeMaterialOptions> }) {
     super();
 
-    
     const { fontAtlas, metrics, materialOptions } = options
-    console.log(metrics)
 
     const defaultOptions: MSDFTextNodeMaterialOptions = {
       transparent: true,
       alphaTest: 0.01,
       threshold: 0.2,
       isSmooth: metrics.fontCssStyles.fontSize < 20 ? 1 : 0 // Default isSmooth to true if font size is <20px
-  };
+    };
 
     /**
      * Build in properties

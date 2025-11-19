@@ -128,12 +128,12 @@ export function layoutText(options: LayoutOptions) {
     width: metrics.widthPx,
     mode: wrapMode,
     measure: (src: string, start: number, end: number, width: number) =>
-      measureRange(glyphLookup, kerningLookup, fontSizeScale, maxErrorPercent, metrics.fontCssStyles.letterSpacing, src, start, end, width),
+      measureRange(glyphLookup, kerningLookup, fontSizeScale, maxErrorPercent, metrics.fontCssStyles.letterSpacingPx, src, start, end, width),
   });
 
   const layoutGlyphs: LayoutGlyph[] = [];
   
-  const fontLineHeight = metrics.fontCssStyles.lineHeight || font.common.lineHeight
+  const fontLineHeight = metrics.fontCssStyles.lineHeightPx || font.common.lineHeight
   const fontBase = font.common.base;
   
   // Offset to align baseline with canvas render
@@ -188,7 +188,7 @@ export function layoutText(options: LayoutOptions) {
 
       const glyphRight = glyphLeft + glyphWidth;
       lineWidth = Math.max(lineWidth, glyphRight);
-      penX += glyph.xadvance * fontSizeScale + metrics.fontCssStyles.letterSpacing;
+      penX += glyph.xadvance * fontSizeScale + metrics.fontCssStyles.letterSpacingPx;
       lastGlyph = glyph;
     }
   });

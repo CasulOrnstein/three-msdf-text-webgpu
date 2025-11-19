@@ -15,6 +15,7 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
   private height!: number;
 
   private currentMetrics: DomTextMetrics | null = null // Metrics last used to generate the geometry
+  private currentGlyphCount: number | null = null
   private font: BMFontJSON
   
   constructor(options: MSDFTextGeometryOptions) {
@@ -34,14 +35,14 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
   public update(metrics: DomTextMetrics) {
     // TODO: Compare against previously given metrics before recalculating    
     const { glyphs, width, height } = layoutText({ metrics, font: this.font });
-    const { positions, uvs, centers, indices, glyphIndices } = buildGeometryAttributes({ glyphs, font: this.font, flipY: true })
+    const { positions, uvs, centers, indices, glyphIndices, glyphCount } = buildGeometryAttributes({ glyphs, font: this.font, flipY: true })
   
     this.width = width;
     this.height = height;
 
     // If number of glyphs is the same, attr array lengths are the same and can update in place
     // Slightly more efficient as reuses existing GPU buffer
-    if (this.currentMetrics?.text.length == metrics.text.length) {
+    if (this.currentGlyphCount == glyphCount) {
       this.attributes.position.array.set(positions)
       this.attributes.uv.array.set(uvs)
       this.attributes.center.array.set(centers)
@@ -62,6 +63,7 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
 
     // Cache the previous metrics used to generate the geometry
     this.currentMetrics = metrics
+    this.currentGlyphCount = glyphCount
   }
 
   // Update text only while reusing existing styles

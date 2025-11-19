@@ -7,7 +7,7 @@ import { Renderer } from "./Renderer";
 import { Debug } from "./Debug";
 import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import type { BMFontJSON } from "@/types/bmfont-json";
-import { MSDFText, SyncMSDFText } from "@/MSDFText";
+import { MSDFText, MSDFTextOptions, SyncMSDFText } from "@/MSDFText";
 
 export class Experience {
   private static _instance: Experience | null = null;
@@ -48,6 +48,20 @@ export class Experience {
   private fontLoader: FontLoader = new FontLoader();
   private textureLoader = new THREE.TextureLoader();
 
+  public msdfTextOptions: MSDFTextOptions = {
+    text: "Lorem Ipsum",
+    textStyles: {
+      fontSize: 32,
+      widthPx: 500,
+      lineHeightPx: 50,
+      letterSpacingPx: 0,
+      whiteSpace: 'normal',
+      color: '#ff0000',
+      opacity: 1
+    }
+  }
+  public showBoundingBox: boolean = false
+
   // region: Constructor
   constructor(readonly parentElement: HTMLElement) {
     // Singleton
@@ -67,20 +81,35 @@ export class Experience {
     
       const textElement = document.getElementById('test-text')!;
       // this.mesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
-      this.mesh = new MSDFText({ text: "Lorem ipsum", textStyles: { fontSize: 32, color: '#ff0000', widthPx: 400 } }, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.mesh = new MSDFText(this.msdfTextOptions, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
       this.mesh.scale.set(0.01, 0.01, 0.01)
       // this.mesh.position.set
       
       // this.mesh.update(this.camera.instance)
       this.scene.add(this.mesh)
 
-      // this.meshBox = new THREE.BoxHelper( this.mesh, 0xffff00 );
-      // this.scene.add( this.meshBox );
-      Debug.pane?.addButton({
-        title: 'Text',
-        label: 'Change text',   // optional
-      }).on('click', () => this.mesh.updateText("Bore Upsum"));
+      this.meshBox = new THREE.BoxHelper( this.mesh, 0xffff00 );
+      this.scene.add( this.meshBox );
+      this.meshBox.visible = this.showBoundingBox
+
+      // Setup Debug
+      Debug.pane?.addBinding(this.meshBox, 'visible', { label: 'Show bounding box'})//.on('change', () => { this.meshBox.visible =  )
+      Debug.pane?.addBinding(this.msdfTextOptions, 'text').on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'widthPx', { min: 50, max: 1000 }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'fontSize', { min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'lineHeightPx', { min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'lineHeightPx', { min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'letterSpacingPx', { min: -5, max: 5 }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'whiteSpace', { options: { normal :'normal', pre: 'pre', nowrap: 'nowrap' } }).on('change', () => this.updateMSDFText() )
+      
+      // Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'color').on('change', () => this.updateMSDFText() )
+      // Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'opacity', { min: 0,  max: 1 }).on('change', () => this.updateMSDFText() )
     });
+  }
+
+  private updateMSDFText() {
+    this.mesh.update(this.msdfTextOptions)
+    this.meshBox.update()
   }
 
   // region: Methods
@@ -93,7 +122,7 @@ export class Experience {
 
   private resize() {
     // this.mesh.update(this.camera.instance)
-    // this.meshBox.update()
+    this.meshBox.update()
     this.camera.resize();
     this.renderer.resize();
   }

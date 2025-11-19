@@ -24,10 +24,10 @@ export interface TextStyles {
   fontSize: number;
   fontWeight: string;
   fontStyle: string;
-  lineHeight: number;
-  letterSpacing: number;
-  textAlign: CanvasTextAlign;
-  whiteSpace: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line' | 'break-spaces';
+  lineHeightPx: number;
+  letterSpacingPx: number;
+  textAlign: CanvasTextAlign; // Currently unused in rendering
+  whiteSpace: 'normal' | 'nowrap' | 'pre'; // TODO: fix pre
   color: string
   opacity: number
   // TODO: Fix stroke rendering
@@ -41,8 +41,8 @@ const DEFAULT_FONT_STYLES: TextStyles = {
   fontSize: 16,
   fontWeight: '400',
   fontStyle: 'normal',
-  lineHeight: 16,
-  letterSpacing: 0,
+  lineHeightPx: 16,
+  letterSpacingPx: 0,
   textAlign: 'left',
   whiteSpace: 'normal',
   color: '#000000',
@@ -89,8 +89,8 @@ function captureCssStyles(element: HTMLElement): TextStyles {
       fontSize: parsePx(style.fontSize) || 16,
       fontWeight: style.fontWeight,
       fontStyle: style.fontStyle,
-      lineHeight: computeLineHeight(style, parsePx(style.fontSize) || 16),
-      letterSpacing: parseLetterSpacing(style),
+      lineHeightPx: computeLineHeight(style, parsePx(style.fontSize) || 16),
+      letterSpacingPx: parseLetterSpacing(style),
       textAlign: (style.textAlign as CanvasTextAlign) || 'left',
       whiteSpace: (style.whiteSpace as TextStyles['whiteSpace']) || 'normal',
       color: style.color,
@@ -129,7 +129,7 @@ function getMeasurementFromCanvas(style: TextStyles, text: string): CanvasRender
   const fontAscent = metrics.fontBoundingBoxAscent ?? actualAscent;
   const fontDescent = metrics.fontBoundingBoxDescent ?? actualDescent;
 
-  const lineGap = Math.max(0, style.lineHeight - (actualAscent + actualDescent));
+  const lineGap = Math.max(0, style.lineHeightPx - (actualAscent + actualDescent));
   const baselineOffsetTop = actualAscent + lineGap * 0.5;
   const baselineOffsetBottom = actualDescent + lineGap * 0.5;
 

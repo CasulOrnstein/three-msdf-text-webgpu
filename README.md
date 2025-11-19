@@ -47,7 +47,6 @@ The available options are:
 
 With `textStyles`:
 - `widthPx` (number: required) - Width of the text in pixels. Determines where text is wrapped.
-- `heightPx` (number: required)
 - `fontFamily` (string): Default - Roboto
 - `fontSize` (number px): Default - 16
 - `fontWeight` (string): Default - "400"

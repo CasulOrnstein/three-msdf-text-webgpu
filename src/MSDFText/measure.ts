@@ -29,6 +29,10 @@ export interface TextStyles {
   textAlign: CanvasTextAlign;
   whiteSpace: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line' | 'break-spaces';
   color: string
+  opacity: number
+  // TODO: Fix stroke rendering
+  // strokeColor: string
+  // strokeWidth: number
 }
 
 const DEFAULT_FONT_STYLES: TextStyles = {
@@ -41,7 +45,10 @@ const DEFAULT_FONT_STYLES: TextStyles = {
   letterSpacing: 0,
   textAlign: 'left',
   whiteSpace: 'normal',
-  color: '#000000'
+  color: '#000000',
+  opacity: 1,
+  // strokeColor: '#000000',
+  // strokeWidth: 0,
 }
 
 let canvasContext: CanvasRenderingContext2D | null = null;
@@ -86,7 +93,10 @@ function captureCssStyles(element: HTMLElement): TextStyles {
       letterSpacing: parseLetterSpacing(style),
       textAlign: (style.textAlign as CanvasTextAlign) || 'left',
       whiteSpace: (style.whiteSpace as TextStyles['whiteSpace']) || 'normal',
-      color: style.color
+      color: style.color,
+      opacity: parseFloat(style.opacity) || 1,
+      // strokeColor: style.webkitTextStrokeColor,
+      // strokeWidth: parseFloat(style.webkitTextStrokeWidth) || 0,
   };
 }
 

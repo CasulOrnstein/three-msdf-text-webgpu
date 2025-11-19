@@ -26,6 +26,9 @@
   color: rgba(255,0,0,0);
   font-size: 50px;
   max-width: 40ch;
+
+  /* -webkit-text-stroke-color: black; */
+  /* -webkit-text-stroke-width: 1px; */
 }
 
 #app {

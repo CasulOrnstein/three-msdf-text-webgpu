@@ -4,62 +4,62 @@ import { uv, mix, uniform, texture, fwidth, clamp, smoothstep, max, min, div, su
 
 // THREE
 import { Color } from 'three';
+import { DomTextMetrics } from '@/MSDFText/measure';
 
 export interface MSDFTextNodeMaterialOptions {
-  transparent?: boolean,
-  alphaTest?: number,
-  opacity?: number,
-  color?: THREE.ColorRepresentation,
-  isSmooth?: number,
-  threshold?: number,
-  strokeColor?: THREE.ColorRepresentation,
-  strokeOutsetWidth?: number,
-  strokeInsetWidth?: number,
+  transparent: boolean,
+  alphaTest: number,
+  isSmooth: number,
+  threshold: number,
 }
-
-const defaultOptions = {
-    transparent: true,
-    opacity: 1,
-    alphaTest: 0.01,
-    threshold: 0.2,
-    color: '#ffffff',
-    strokeColor: '#000000',
-    strokeOutsetWidth: 0,
-    strokeInsetWidth: 0.3,
-    isSmooth: 0,
-};
 
 export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
   private map: THREE.Texture // MSDF atlas texture
 
-  constructor(fontAtlas: THREE.Texture, options: MSDFTextNodeMaterialOptions = defaultOptions) {
+  constructor(options: { fontAtlas: THREE.Texture, metrics: DomTextMetrics, materialOptions?: Partial<MSDFTextNodeMaterialOptions> }) {
     super();
+
+    
+    const { fontAtlas, metrics, materialOptions } = options
+    console.log(metrics)
+
+    const defaultOptions: MSDFTextNodeMaterialOptions = {
+      transparent: true,
+      alphaTest: 0.01,
+      threshold: 0.2,
+      isSmooth: metrics.fontCssStyles.fontSize < 20 ? 1 : 0 // Default isSmooth to true if font size is <20px
+  };
 
     /**
      * Build in properties
      */
-    this.transparent = options.transparent || defaultOptions.transparent;
-    this.alphaTest = options.alphaTest || defaultOptions.alphaTest;
+    this.transparent = materialOptions?.transparent || defaultOptions.transparent;
+    this.alphaTest = materialOptions?.alphaTest || defaultOptions.alphaTest;
 
     /**
      * Uniforms: basic
      */
-    const opacity = uniform(options?.opacity || defaultOptions.opacity);
-    const color = uniform(new Color(options.color || defaultOptions.color));
+    const opacity = uniform(metrics.fontCssStyles.opacity);
+    const color = uniform(new Color(metrics.fontCssStyles.color));
     this.map = fontAtlas;
 
     /**
      * Uniforms small font sizes
      */
-    const isSmooth = uniform(options.isSmooth || defaultOptions.isSmooth);
-    const threshold = uniform(options.threshold || defaultOptions.threshold);
+    const defaultIsSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
+
+    const isSmooth = uniform(materialOptions?.isSmooth || defaultIsSmooth);
+    const threshold = uniform(materialOptions?.threshold || defaultOptions.threshold);
 
     /**
      * Uniforms: stroke
      */
-    const strokeColor = uniform(new Color(options.strokeColor || defaultOptions.strokeColor));
-    const strokeOutsetWidth = uniform(options.strokeOutsetWidth || defaultOptions.strokeOutsetWidth);
-    const strokeInsetWidth = uniform(options.strokeInsetWidth || defaultOptions.strokeInsetWidth);
+    // TODO: Fix stroke rendering
+    const _strokeColor = new THREE.Color('#000000') // metrics.fontCssStyles.strokeColor
+    const _stokeWidth = 0 // metrics.fontCssStyles.strokeWidth
+    const strokeColor = uniform(_strokeColor);
+    const strokeOutsetWidth = uniform(_stokeWidth);
+    // const strokeInsetWidth = uniform(options.strokeInsetWidth || defaultOptions.strokeInsetWidth);
 
     const afwidth = 1.4142135623730951 / 2.0;
     const median = (r: THREE.Node, g: THREE.Node, b: THREE.Node) => max(min(r, g), min(max(r, g), b));

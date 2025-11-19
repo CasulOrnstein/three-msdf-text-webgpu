@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu'
 import type { BMFontJSON } from '@/types/bmfont-json'
 import { MSDFTextGeometry } from '@/MSDFTextGeometry';
 import { MSDFTextNodeMaterial } from '@/MSDFTextMaterial';
-import { collectDomTextMetrics, constructDomTextMetrics, TextStyles, type DomTextMetrics } from '@/MSDFText/measure';
+import { collectDomTextMetrics, constructDomTextMetrics, TextStyles } from '@/MSDFText/measure';
 
 export type MSDFTextOptions = { text: string, textStyles?: Partial<TextStyles> }
 
@@ -12,11 +12,9 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
   
   constructor(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
     const metrics = constructDomTextMetrics(options)
-
-    const isSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
     
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
-    const material = new MSDFTextNodeMaterial(font.atlas, { color: metrics.fontCssStyles.color, isSmooth })
+    const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })
     
     super(geometry, material)
   }
@@ -27,11 +25,9 @@ export class SyncMSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMater
   
   constructor(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
     const metrics = collectDomTextMetrics(element)
-    
-    const isSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
-    
+        
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
-    const material = new MSDFTextNodeMaterial(font.atlas, { color: metrics.fontCssStyles.color, isSmooth })
+    const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })
     
     super(geometry, material)
     

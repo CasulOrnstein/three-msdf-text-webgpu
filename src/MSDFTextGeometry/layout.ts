@@ -45,6 +45,8 @@ function getKerningAmount(kerningLookup: KerningLookup, left: BMFontChar | null,
 function measureRange(
   glyphLookup: GlyphLookup,
   kerningLookup: KerningLookup,
+  fontSizeScale: number,
+  maxErrorPercent: number,
   letterSpacing: number,
   text: string,
   start: number,
@@ -56,29 +58,32 @@ function measureRange(
   let lastGlyph: BMFontChar | null = null;
   const glyphCount = Math.min(text.length, end);
 
+  // Allow for a slight error in the widths before wrapping
+  const widthIncError = width * (1 + maxErrorPercent/100)
+
   let i = start;
   for (; i < glyphCount; i++) {
-      const charCode = text.charCodeAt(i);
-      const glyph = glyphLookup.get(charCode);
-      if (!glyph) {
-          lastGlyph = null;
-          continue;
-      }
+    const charCode = text.charCodeAt(i);
+    const glyph = glyphLookup.get(charCode);
+    if (!glyph) {
+        lastGlyph = null;
+        continue;
+    }
 
-      // Move the pen by the kerning amount
-      penX += getKerningAmount(kerningLookup, lastGlyph, glyph);
+    // Move the pen by the kerning amount
+    penX += getKerningAmount(kerningLookup, lastGlyph, glyph);
 
-      const left = penX + glyph.xoffset;
-      const right = left + glyph.width;
-      const advance = glyph.xadvance + letterSpacing;
+    const left = penX + (glyph.xoffset * fontSizeScale);
+    const right = left + (glyph.width * fontSizeScale);
+    const advance = glyph.xadvance * fontSizeScale + letterSpacing;
 
-      if (right > width && width !== Number.MAX_VALUE) {
-          break;
-      }
+    if (right > widthIncError && widthIncError !== Number.MAX_VALUE) {
+        break;
+    }
 
-      maxX = Math.max(maxX, right);
-      penX += advance;
-      lastGlyph = glyph;
+    maxX = Math.max(maxX, right);
+    penX += advance;
+    lastGlyph = glyph;
   }
 
   return {
@@ -117,13 +122,13 @@ export function layoutText(options: LayoutOptions) {
   }
 
   const fontSizeScale = metrics.fontCssStyles.fontSize / font.info?.size!
+  const maxErrorPercent = 0.5 // Allow for a 0.5% error on the width
 
-  // const wrapMode = wordWrapMode(metrics.style.whiteSpace);
   const lines = wordWrap.lines(metrics.text, {
-      width: metrics.size.width / fontSizeScale,
-      mode: wrapMode,
-      measure: (src: string, start: number, end: number, width: number) =>
-        measureRange(glyphLookup, kerningLookup,  metrics.fontCssStyles.letterSpacing, src, start, end, width),
+    width: metrics.size.width,
+    mode: wrapMode,
+    measure: (src: string, start: number, end: number, width: number) =>
+      measureRange(glyphLookup, kerningLookup, fontSizeScale, maxErrorPercent, metrics.fontCssStyles.letterSpacing, src, start, end, width),
   });
 
   const layoutGlyphs: LayoutGlyph[] = [];
@@ -188,13 +193,10 @@ export function layoutText(options: LayoutOptions) {
     }
   });
 
-  const height = fontLineHeight * lines.length;
-
   return {
       glyphs: layoutGlyphs,
       lines,
       width: metrics.size.width,
-      // height: metrics.size.height,
-      height,
+      height: fontLineHeight * lines.length,
   };
 }

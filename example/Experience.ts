@@ -89,7 +89,7 @@ export class Experience {
 
   private resize() {
     this.mesh.alignWithElement(this.camera.instance)
-    this.meshBox.update()
+    // this.meshBox.update()
     this.camera.resize();
     this.renderer.resize();
   }

@@ -114,6 +114,7 @@ export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: 
     uvs,
     centers,
     indices,
-    glpyhIndices
+    glpyhIndices,
+    glyphCount
   };
 }

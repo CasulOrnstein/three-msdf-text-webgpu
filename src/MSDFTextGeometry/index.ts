@@ -14,16 +14,14 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
   private width!: number;
   private height!: number;
 
-  private metrics: DomTextMetrics
+  private metrics!: DomTextMetrics
   private font: BMFontJSON
   
   constructor(options: MSDFTextGeometryOptions) {
     super();
 
-    this.metrics = options.metrics
     this.font = options.font;
-
-    this.update()
+    this._update(options.metrics)
   }
 
   computeBoundingBox(): void {
@@ -33,14 +31,9 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
     )
   }
 
-  update() {
-    // Only update DOM metrics if we are tracking an element
-    if (this.metrics.element) {
-      // TODO: Cache results and only update if DOM element size, CSS attributes or text content change
-      this.metrics = collectDomTextMetrics(this.metrics.element);
-    }
-    
-    const { glyphs, width, height } = layoutText({ metrics: this.metrics, font: this.font });
+  private _update(metrics: DomTextMetrics) {
+    // TODO: Compare against previously given metrics before recalculating    
+    const { glyphs, width, height } = layoutText({ metrics, font: this.font });
     const { positions, uvs, centers, indices, glpyhIndices } = buildGeometryAttributes({ glyphs, font: this.font, flipY: true })
   
     this.width = width;
@@ -54,5 +47,13 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
 
     this.computeBoundingBox();
     this.computeBoundingSphere();
+
+    // Cache the previous metrics used to generate the geometry
+    this.metrics = metrics
+  }
+
+  public updateFromDomElement(element: HTMLElement) {
+    const updatedMetrics = collectDomTextMetrics(element)
+    this._update(updatedMetrics)
   }
 } 

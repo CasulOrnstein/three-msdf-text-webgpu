@@ -5,7 +5,6 @@ export interface DomTextMetrics {
   fontCssStyles: TextStyles;
   canvasRenderMeasurements: CanvasRenderMeasurements
   widthPx: number;
-  element?: HTMLElement
 }
 
 interface CanvasRenderMeasurements {
@@ -147,7 +146,6 @@ export function collectDomTextMetrics(element: HTMLElement): DomTextMetrics {
     fontCssStyles: textStyles,
     canvasRenderMeasurements,
     widthPx: width,
-    element
   }
 }
 

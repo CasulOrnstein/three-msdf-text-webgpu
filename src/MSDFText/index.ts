@@ -10,7 +10,24 @@ export type MSDFTextOptions = { text: string, textStyles?: Partial<TextStyles> }
 export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
   readonly element: HTMLElement | undefined
   
-  constructor(metrics: DomTextMetrics, font: { atlas: THREE.Texture, data: BMFontJSON }) {
+  constructor(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
+    const metrics = constructDomTextMetrics(options)
+
+    const isSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
+    
+    const geometry = new MSDFTextGeometry({ metrics, font: font.data })
+    const material = new MSDFTextNodeMaterial(font.atlas, { color: metrics.fontCssStyles.color, isSmooth })
+    
+    super(geometry, material)
+  }
+}
+
+export class SyncMSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
+  readonly element: HTMLElement | undefined
+  
+  constructor(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
+    const metrics = collectDomTextMetrics(element)
+    
     const isSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
     
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
@@ -18,21 +35,11 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     
     super(geometry, material)
     
-    this.element = metrics.element
-  }
-
-  public static fromString(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
-    const metrics = constructDomTextMetrics(options)
-    return new MSDFText(metrics, font)
-  }
-
-  public static fromDomElement(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
-    const metrics = collectDomTextMetrics(element)
-    return new MSDFText(metrics, font)
+    this.element = element
   }
 
   // Update the transform of the mesh to match the position of a DOM element on a perpendicular plane at a given depth from the camera
-  public alignWithElement(camera: { position: THREE.Vector3, quaternion: THREE.Quaternion, fov: number, aspect: number }, depthFromCamera: number = 5) {
+  public update(camera: { position: THREE.Vector3, quaternion: THREE.Quaternion, fov: number, aspect: number }, depthFromCamera: number = 5) {
     if (!this.element) {
       console.log("Unable to align MSDFText with element when using the fromString constructor")
       return
@@ -63,6 +70,6 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     this.quaternion.copy(quaternionWorldSpace)
 
     // Update geometry
-    this.geometry.update()
+    this.geometry.updateFromDomElement(this.element)
   }
 }

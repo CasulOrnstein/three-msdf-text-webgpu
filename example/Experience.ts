@@ -7,7 +7,7 @@ import { Renderer } from "./Renderer";
 import { Debug } from "./Debug";
 import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import type { BMFontJSON } from "@/types/bmfont-json";
-import { MSDFText } from "@/MSDFText";
+import { MSDFText, SyncMSDFText } from "@/MSDFText";
 
 export class Experience {
   private static _instance: Experience | null = null;
@@ -40,7 +40,7 @@ export class Experience {
 
   private initialised: boolean = false;
 
-  private mesh!: MSDFText
+  private mesh!: SyncMSDFText
   private meshBox!: THREE.BoxHelper
 
   private font!: Font;
@@ -66,12 +66,12 @@ export class Experience {
       this.time.on(TimeTriggers.Render, (deltaMs: number) => { this.update(deltaMs) });
     
       const textElement = document.getElementById('test-text')!;
-      this.mesh = MSDFText.fromDomElement(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.mesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
       // this.mesh = MSDFText.fromString("Lorem ipsum", { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
       // this.mesh.scale.set(0.05, 0.05, 0.05)
       // this.mesh.position.set
       
-      this.mesh.alignWithElement(this.camera.instance)
+      this.mesh.update(this.camera.instance)
       this.scene.add(this.mesh)
 
       // this.meshBox = new THREE.BoxHelper( this.mesh, 0xffff00 );
@@ -88,7 +88,7 @@ export class Experience {
   }
 
   private resize() {
-    this.mesh.alignWithElement(this.camera.instance)
+    this.mesh.update(this.camera.instance)
     // this.meshBox.update()
     this.camera.resize();
     this.renderer.resize();

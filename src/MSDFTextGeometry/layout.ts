@@ -125,7 +125,7 @@ export function layoutText(options: LayoutOptions) {
   const maxErrorPercent = 0.5 // Allow for a 0.5% error on the width
 
   const lines = wordWrap.lines(metrics.text, {
-    width: metrics.size.width,
+    width: metrics.widthPx,
     mode: wrapMode,
     measure: (src: string, start: number, end: number, width: number) =>
       measureRange(glyphLookup, kerningLookup, fontSizeScale, maxErrorPercent, metrics.fontCssStyles.letterSpacing, src, start, end, width),
@@ -152,51 +152,51 @@ export function layoutText(options: LayoutOptions) {
     // Add glyphs per line
     let lastGlyph: BMFontChar | null = null;
     for (let i = lineStart; i < lineEnd; i++) {
-        const charCode = metrics.text.charCodeAt(i);
-        const glyph = glyphLookup.get(charCode);
-        if (!glyph) {
-            lastGlyph = null;
-            continue;
-        }
+      const charCode = metrics.text.charCodeAt(i);
+      const glyph = glyphLookup.get(charCode);
+      if (!glyph) {
+          lastGlyph = null;
+          continue;
+      }
 
-        penX += getKerningAmount(kerningLookup, lastGlyph, glyph);
+      penX += getKerningAmount(kerningLookup, lastGlyph, glyph);
 
-        // Determine glyph bounding box
-        const glyphLeft = penX + (glyph.xoffset * fontSizeScale);
-        const glyphTop = topLineY - (glyph.yoffset * fontSizeScale);
-        const glyphBottom = glyphTop - (glyph.height  * fontSizeScale)
-        const glyphWidth = glyph.width * fontSizeScale;
-        const glyphHeight = glyph.height * fontSizeScale;
+      // Determine glyph bounding box
+      const glyphLeft = penX + (glyph.xoffset * fontSizeScale);
+      const glyphTop = topLineY - (glyph.yoffset * fontSizeScale);
+      const glyphBottom = glyphTop - (glyph.height  * fontSizeScale)
+      const glyphWidth = glyph.width * fontSizeScale;
+      const glyphHeight = glyph.height * fontSizeScale;
 
-        const bottomLeftPosition = {
-            x: glyphLeft,
-            y: glyphBottom + yOffset,
-        }
+      const bottomLeftPosition = {
+          x: glyphLeft,
+          y: glyphBottom + yOffset,
+      }
 
-        layoutGlyphs.push({
-            index: glyphIndex++,
-            char: glyph.char || String.fromCharCode(charCode),
-            code: charCode,
-            lineIndex,
-            bottomLeftPosition,
-            size: {
-                width: glyphWidth,
-                height: glyphHeight,
-            },
-            atlas: glyph,
-        });
+      layoutGlyphs.push({
+          index: glyphIndex++,
+          char: glyph.char || String.fromCharCode(charCode),
+          code: charCode,
+          lineIndex,
+          bottomLeftPosition,
+          size: {
+              width: glyphWidth,
+              height: glyphHeight,
+          },
+          atlas: glyph,
+      });
 
-        const glyphRight = glyphLeft + glyphWidth;
-        lineWidth = Math.max(lineWidth, glyphRight);
-        penX += glyph.xadvance * fontSizeScale + metrics.fontCssStyles.letterSpacing;
-        lastGlyph = glyph;
+      const glyphRight = glyphLeft + glyphWidth;
+      lineWidth = Math.max(lineWidth, glyphRight);
+      penX += glyph.xadvance * fontSizeScale + metrics.fontCssStyles.letterSpacing;
+      lastGlyph = glyph;
     }
   });
 
   return {
       glyphs: layoutGlyphs,
       lines,
-      width: metrics.size.width,
+      width: metrics.widthPx,
       height: fontLineHeight * lines.length,
   };
 }

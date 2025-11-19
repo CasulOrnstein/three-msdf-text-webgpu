@@ -4,7 +4,7 @@ export interface DomTextMetrics {
   text: string;
   fontCssStyles: TextStyles;
   canvasRenderMeasurements: CanvasRenderMeasurements
-  size: { width: number, height: number };
+  widthPx: number;
   element?: HTMLElement
 }
 
@@ -21,7 +21,6 @@ interface CanvasRenderMeasurements {
 
 export interface TextStyles {
   widthPx: number;
-  heightPx: number;
   fontFamily: string;
   fontSize: number;
   fontWeight: string;
@@ -35,7 +34,6 @@ export interface TextStyles {
 
 const DEFAULT_FONT_STYLES: TextStyles = {
   widthPx: 500,
-  heightPx: 500,
   fontFamily: 'Roboto',
   fontSize: 16,
   fontWeight: '400',
@@ -77,11 +75,10 @@ function parsePx(value: string): number {
 
 function captureCssStyles(element: HTMLElement): TextStyles {
   const style = window.getComputedStyle(element);
-  const { width, height } = element.getBoundingClientRect()
+  const { width } = element.getBoundingClientRect()
 
   return {
       widthPx: width,
-      heightPx: height,
       fontFamily: style.fontFamily,
       fontSize: parsePx(style.fontSize) || 16,
       fontWeight: style.fontWeight,
@@ -143,13 +140,13 @@ export function collectDomTextMetrics(element: HTMLElement): DomTextMetrics {
   const textStyles = captureCssStyles(element);
   const canvasRenderMeasurements = getMeasurementFromCanvas(textStyles, element.textContent);
   
-  const { width, height } = element.getBoundingClientRect()
+  const { width } = element.getBoundingClientRect()
 
   return {
     text: element.textContent,
     fontCssStyles: textStyles,
     canvasRenderMeasurements,
-    size: { width, height },
+    widthPx: width,
     element
   }
 }
@@ -158,15 +155,10 @@ export function constructDomTextMetrics(options: MSDFTextOptions): DomTextMetric
   const cssStyles: TextStyles = {...DEFAULT_FONT_STYLES, ...options.textStyles }
   const canvasRenderMeasurements = getMeasurementFromCanvas(cssStyles, options.text);
 
-  // Use size from the given options. Canvas render is only on one line, so 
-  const size = {
-    width: options.textStyles?.widthPx || canvasRenderMeasurements.width,
-    height: options.textStyles?.heightPx || 500
-  }
   return {
     text: options.text,
     fontCssStyles: cssStyles,
     canvasRenderMeasurements,
-    size: { width: options.textStyles?.widthPx || 500, height: options.textStyles?.heightPx || 500 },
+    widthPx: options.textStyles?.widthPx || canvasRenderMeasurements.width,
   }
 }

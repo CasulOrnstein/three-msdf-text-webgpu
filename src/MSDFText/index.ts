@@ -3,7 +3,9 @@ import * as THREE from 'three/webgpu'
 import type { BMFontJSON } from '@/types/bmfont-json'
 import { MSDFTextGeometry } from '@/MSDFTextGeometry';
 import { MSDFTextNodeMaterial } from '@/MSDFTextMaterial';
-import { collectDomTextMetrics, constructDomTextMetrics, type DomTextMetrics, type MetricsContsructionOptions } from '@/MSDFText/measure';
+import { collectDomTextMetrics, constructDomTextMetrics, TextStyles, type DomTextMetrics } from '@/MSDFText/measure';
+
+export type MSDFTextOptions = { text: string, textStyles?: Partial<TextStyles> }
 
 export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
   readonly element: HTMLElement | undefined
@@ -19,8 +21,8 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     this.element = metrics.element
   }
 
-  public static fromString(text: string, font: { atlas: THREE.Texture, data: BMFontJSON }, styleOptions?: MetricsContsructionOptions) {
-    const metrics = constructDomTextMetrics(text, styleOptions)
+  public static fromString(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
+    const metrics = constructDomTextMetrics(options)
     return new MSDFText(metrics, font)
   }
 

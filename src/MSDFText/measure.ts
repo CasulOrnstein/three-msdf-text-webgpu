@@ -1,21 +1,27 @@
+import { MSDFTextOptions } from "@/MSDFText";
+
 export interface DomTextMetrics {
   text: string;
-  fontCssStyles: DomStyleSnapshot;
-  canvasRenderMeasurements: {
-    width: number;
-    actualAscent: number;
-    actualDescent: number;
-    fontAscent: number;
-    fontDescent: number;
-    baselineOffsetTop: number;
-    baselineOffsetBottom: number;
-    lineGap: number;
-  };
+  fontCssStyles: TextStyles;
+  canvasRenderMeasurements: CanvasRenderMeasurements
   size: { width: number, height: number };
   element?: HTMLElement
 }
 
-interface DomStyleSnapshot {
+interface CanvasRenderMeasurements {
+  width: number;
+  actualAscent: number;
+  actualDescent: number;
+  fontAscent: number;
+  fontDescent: number;
+  baselineOffsetTop: number;
+  baselineOffsetBottom: number;
+  lineGap: number;
+}
+
+export interface TextStyles {
+  widthPx: number;
+  heightPx: number;
   fontFamily: string;
   fontSize: number;
   fontWeight: string;
@@ -27,7 +33,9 @@ interface DomStyleSnapshot {
   color: string
 }
 
-const DEFAULT_FONT_STYLES: DomStyleSnapshot = {
+const DEFAULT_FONT_STYLES: TextStyles = {
+  widthPx: 500,
+  heightPx: 500,
   fontFamily: 'Roboto',
   fontSize: 16,
   fontWeight: '400',
@@ -67,8 +75,13 @@ function parsePx(value: string): number {
   return Number.isFinite(numeric) ? numeric : NaN;
 }
 
-function captureCssStyles(style: CSSStyleDeclaration): DomStyleSnapshot {
+function captureCssStyles(element: HTMLElement): TextStyles {
+  const style = window.getComputedStyle(element);
+  const { width, height } = element.getBoundingClientRect()
+
   return {
+      widthPx: width,
+      heightPx: height,
       fontFamily: style.fontFamily,
       fontSize: parsePx(style.fontSize) || 16,
       fontWeight: style.fontWeight,
@@ -76,7 +89,7 @@ function captureCssStyles(style: CSSStyleDeclaration): DomStyleSnapshot {
       lineHeight: computeLineHeight(style, parsePx(style.fontSize) || 16),
       letterSpacing: parseLetterSpacing(style),
       textAlign: (style.textAlign as CanvasTextAlign) || 'left',
-      whiteSpace: (style.whiteSpace as DomStyleSnapshot['whiteSpace']) || 'normal',
+      whiteSpace: (style.whiteSpace as TextStyles['whiteSpace']) || 'normal',
       color: style.color
   };
 }
@@ -99,7 +112,7 @@ function parseLetterSpacing(style: CSSStyleDeclaration): number {
   return parsePx(raw) || 0;
 }
 
-function getMeasurementFromCanvas(style: DomStyleSnapshot, text: string) {
+function getMeasurementFromCanvas(style: TextStyles, text: string): CanvasRenderMeasurements {
   const ctx = getContext();
   ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
   ctx.textAlign = style.textAlign;
@@ -127,30 +140,33 @@ function getMeasurementFromCanvas(style: DomStyleSnapshot, text: string) {
 }
 
 export function collectDomTextMetrics(element: HTMLElement): DomTextMetrics {
-  const style = window.getComputedStyle(element);
-  const fontCssStyles = captureCssStyles(style);
-  const canvasRenderMeasurements = getMeasurementFromCanvas(fontCssStyles, element.textContent);
+  const textStyles = captureCssStyles(element);
+  const canvasRenderMeasurements = getMeasurementFromCanvas(textStyles, element.textContent);
   
   const { width, height } = element.getBoundingClientRect()
 
   return {
     text: element.textContent,
-    fontCssStyles,
+    fontCssStyles: textStyles,
     canvasRenderMeasurements,
     size: { width, height },
     element
   }
 }
 
-export type MetricsContsructionOptions = { width: number, height: number, cssStyles?: Partial<DomStyleSnapshot> }
+export function constructDomTextMetrics(options: MSDFTextOptions): DomTextMetrics {
+  const cssStyles: TextStyles = {...DEFAULT_FONT_STYLES, ...options.textStyles }
+  const canvasRenderMeasurements = getMeasurementFromCanvas(cssStyles, options.text);
 
-export function constructDomTextMetrics(text: string, options: MetricsContsructionOptions = { width: 500, height: 500 }) {
-  const cssStyles: DomStyleSnapshot = {...DEFAULT_FONT_STYLES, ...options.cssStyles }
-  const canvasRenderMeasurements = getMeasurementFromCanvas(cssStyles, text);
+  // Use size from the given options. Canvas render is only on one line, so 
+  const size = {
+    width: options.textStyles?.widthPx || canvasRenderMeasurements.width,
+    height: options.textStyles?.heightPx || 500
+  }
   return {
-    text,
+    text: options.text,
     fontCssStyles: cssStyles,
     canvasRenderMeasurements,
-    size: { width: options.width, height: options.height },
+    size: { width: options.textStyles?.widthPx || 500, height: options.textStyles?.heightPx || 500 },
   }
 }

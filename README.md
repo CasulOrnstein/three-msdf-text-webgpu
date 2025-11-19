@@ -34,20 +34,20 @@ const font = await this.fontLoader.loadAsync("/font/Roboto-Regular-msdf.json"),
 const atlas = await this.textureLoader.loadAsync("/font/Roboto-Regular.png")
 
 const textMesh = MSDFText.fromString(
-  "Lorem ipsum",
+  { text: "Lorem ipsum", textStyles: { widthPx: 300, color: '#FFFFFF', fontFamily: 'Roboto' } }
   { atlas, data: font.data as unknown as BMFontJSON },
-  { width: 300, color: '#FFFFFF', fontFamily: 'Roboto' }
 )
 ```
 
 Note: The width/height of the resultant geometry will be equal to the pixel width/height of the rendered text, so the resulting mesh will need to be scaled.
 
 The available options are:
-- `width` (number: required) - Width of the text in pixels. Determines where text is wrapped.
-- `height` (number: required)
-- `cssStyles` (see below)
+- `text` (string: required)
+- `textStyles`
 
-With `cssStyles`:
+With `textStyles`:
+- `widthPx` (number: required) - Width of the text in pixels. Determines where text is wrapped.
+- `heightPx` (number: required)
 - `fontFamily` (string): Default - Roboto
 - `fontSize` (number px): Default - 16
 - `fontWeight` (string): Default - "400"

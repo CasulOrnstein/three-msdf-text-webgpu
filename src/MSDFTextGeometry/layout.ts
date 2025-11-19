@@ -163,15 +163,17 @@ export function layoutText(options: LayoutOptions) {
         const glyphWidth = glyph.width * fontSizeScale;
         const glyphHeight = glyph.height * fontSizeScale;
 
+        const bottomLeftPosition = {
+            x: glyphLeft,
+            y: glyphBottom + yOffset,
+        }
+
         layoutGlyphs.push({
             index: glyphIndex++,
             char: glyph.char || String.fromCharCode(charCode),
             code: charCode,
             lineIndex,
-            bottomLeftPosition: {
-                x: glyphLeft,
-                y: glyphBottom + yOffset,
-            },
+            bottomLeftPosition,
             size: {
                 width: glyphWidth,
                 height: glyphHeight,
@@ -186,10 +188,13 @@ export function layoutText(options: LayoutOptions) {
     }
   });
 
+  const height = fontLineHeight * lines.length;
+
   return {
       glyphs: layoutGlyphs,
       lines,
       width: metrics.size.width,
-      height: metrics.size.height,
+      // height: metrics.size.height,
+      height,
   };
 }

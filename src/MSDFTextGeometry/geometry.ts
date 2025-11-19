@@ -13,7 +13,7 @@ export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: 
   const positions = new Float32Array(glyphCount * 4 * 3); // 4 [x,y,z] positions per glyph (tl, tr, br, bl)
   const uvs = new Float32Array(glyphCount * 4 * 2); // 4 [u,v] positions per glyph (tl, tr, br, bl)
   const centers = new Float32Array(glyphCount * 4 * 2); // [x,y] positions for the center of the glyph for each vertex (tl, tr, br, bl)
-  const glpyhIndices = new Uint32Array(glyphCount * 4); // Index per glyph vertex
+  const glyphIndices = new Uint32Array(glyphCount * 4); // Index per glyph vertex
 
   glyphs.forEach((glyph, index) => {
     const { atlas } = glyph;
@@ -29,7 +29,7 @@ export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: 
     const centerIndex = index * 8; // 4 vertices * 2 components
     const indicesIndex = index * 6; // 
     const verticesIndex = index * 4;
-    const glpyhIndicesIndex = index * 4;
+    const glyphIndicesIndex = index * 4;
     // const layoutIndex = index * 8;
 
     // Position buffer (y-up in world space, origin at top-left of layout)
@@ -92,10 +92,10 @@ export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: 
     centers[centerIndex + 7] = centerY;
 
     // Glyph Indices
-    glpyhIndices[glpyhIndicesIndex] = index
-    glpyhIndices[glpyhIndicesIndex + 1] = index
-    glpyhIndices[glpyhIndicesIndex + 2] = index
-    glpyhIndices[glpyhIndicesIndex + 3] = index
+    glyphIndices[glyphIndicesIndex] = index
+    glyphIndices[glyphIndicesIndex + 1] = index
+    glyphIndices[glyphIndicesIndex + 2] = index
+    glyphIndices[glyphIndicesIndex + 3] = index
 
     // Indices (ccw winding order)
     // Triangle 1: top-left -> bottom-right -> top-right
@@ -114,7 +114,6 @@ export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: 
     uvs,
     centers,
     indices,
-    glpyhIndices,
-    glyphCount
+    glyphIndices
   };
 }

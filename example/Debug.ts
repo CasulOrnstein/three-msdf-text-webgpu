@@ -18,7 +18,7 @@ export class Debug {
   private _debugPane: Pane | null = null;
   private _stats: Stats | null = null;
   
-  constructor(private _active: boolean = false) {
+  constructor(private _active: boolean = true) {
     if (Debug._instance) return Debug._instance;
     Debug._instance = this;
 

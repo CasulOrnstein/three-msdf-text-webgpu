@@ -8,8 +8,6 @@ import { collectDomTextMetrics, constructDomTextMetrics, TextStyles } from '@/MS
 export type MSDFTextOptions = { text: string, textStyles?: Partial<TextStyles> }
 
 export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
-  readonly element: HTMLElement | undefined
-  
   constructor(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
     const metrics = constructDomTextMetrics(options)
     
@@ -17,6 +15,15 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })
     
     super(geometry, material)
+  }
+
+  public update(options: MSDFTextOptions) {
+    const metrics = constructDomTextMetrics(options)
+    this.geometry.update(metrics)
+  }
+
+  public updateText(text: string) {
+    this.geometry.updateText(text)
   }
 }
 

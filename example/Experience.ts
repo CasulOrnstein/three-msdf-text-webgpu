@@ -40,7 +40,7 @@ export class Experience {
 
   private initialised: boolean = false;
 
-  private mesh!: SyncMSDFText
+  private mesh!: MSDFText
   private meshBox!: THREE.BoxHelper
 
   private font!: Font;
@@ -49,7 +49,7 @@ export class Experience {
   private textureLoader = new THREE.TextureLoader();
 
   // region: Constructor
-  constructor(readonly parentElement: HTMLElement, debugMode: boolean = false) {
+  constructor(readonly parentElement: HTMLElement) {
     // Singleton
     if (Experience._instance) return Experience._instance;
     Experience._instance = this;
@@ -59,23 +59,27 @@ export class Experience {
     this.renderer = new Renderer();    
 
     this.init().then(() => {
-      this.debug = new Debug(debugMode);
+      this.debug = new Debug();
       this.camera = new Camera();
       
       this.sizes.on(SizesTriggers.Resize, () => { this.resize() });
       this.time.on(TimeTriggers.Render, (deltaMs: number) => { this.update(deltaMs) });
     
       const textElement = document.getElementById('test-text')!;
-      this.mesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
-      // this.mesh = MSDFText.fromString("Lorem ipsum", { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
-      // this.mesh.scale.set(0.05, 0.05, 0.05)
+      // this.mesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.mesh = new MSDFText({ text: "Lorem ipsum", textStyles: { fontSize: 32, color: '#ff0000', widthPx: 400 } }, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.mesh.scale.set(0.01, 0.01, 0.01)
       // this.mesh.position.set
       
-      this.mesh.update(this.camera.instance)
+      // this.mesh.update(this.camera.instance)
       this.scene.add(this.mesh)
 
       // this.meshBox = new THREE.BoxHelper( this.mesh, 0xffff00 );
       // this.scene.add( this.meshBox );
+      Debug.pane?.addButton({
+        title: 'Text',
+        label: 'Change text',   // optional
+      }).on('click', () => this.mesh.updateText("Bore Upsum"));
     });
   }
 
@@ -88,7 +92,7 @@ export class Experience {
   }
 
   private resize() {
-    this.mesh.update(this.camera.instance)
+    // this.mesh.update(this.camera.instance)
     // this.meshBox.update()
     this.camera.resize();
     this.renderer.resize();

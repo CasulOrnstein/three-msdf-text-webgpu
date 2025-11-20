@@ -8,13 +8,18 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build"
+    "example": "vite",
+    "build": "vite build",
+    "build-ghpages": "vite build --mode ghpages"
   },
   "dependencies": {
     "word-wrapper": "^1.0.7"
   },
   "devDependencies": {
+    "@tweakpane/core": "^2.0.5",
     "@types/three": "^0.181.0",
+    "stats-gl": "^3.7.0",
+    "tweakpane": "^4.0.5",
     "vite": "^7.2.2",
     "vite-plugin-dts": "^4.5.4"
   },

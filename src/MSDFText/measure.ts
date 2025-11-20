@@ -1,42 +1,57 @@
+import * as THREE from 'three/webgpu'
+import { MSDFTextOptions } from "@/MSDFText";
+
 export interface DomTextMetrics {
   text: string;
-  fontCssStyles: DomStyleSnapshot;
-  canvasRenderMeasurements: {
-    width: number;
-    actualAscent: number;
-    actualDescent: number;
-    fontAscent: number;
-    fontDescent: number;
-    baselineOffsetTop: number;
-    baselineOffsetBottom: number;
-    lineGap: number;
-  };
-  size: { width: number, height: number };
-  element?: HTMLElement
+  fontCssStyles: TextStyles;
+  canvasRenderMeasurements: CanvasRenderMeasurements
+  widthPx: number;
 }
 
-interface DomStyleSnapshot {
+interface CanvasRenderMeasurements {
+  width: number;
+  actualAscent: number;
+  actualDescent: number;
+  fontAscent: number;
+  fontDescent: number;
+  baselineOffsetTop: number;
+  baselineOffsetBottom: number;
+  lineGap: number;
+}
+
+export interface TextStyles {
+  // Geometry related
+  widthPx: number;
   fontFamily: string;
   fontSize: number;
   fontWeight: string;
   fontStyle: string;
-  lineHeight: number;
-  letterSpacing: number;
-  textAlign: CanvasTextAlign;
-  whiteSpace: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line' | 'break-spaces';
-  color: string
+  lineHeightPx: number;
+  letterSpacingPx: number;
+  textAlign: CanvasTextAlign; // Currently unused in rendering
+  whiteSpace: 'normal' | 'nowrap' | 'pre'; // TODO: fix pre
+  // Material related
+  color: THREE.ColorRepresentation
+  opacity: number
+  // TODO: Fix stroke rendering
+  // strokeColor: string
+  // strokeWidth: number
 }
 
-const DEFAULT_FONT_STYLES: DomStyleSnapshot = {
+const DEFAULT_FONT_STYLES: TextStyles = {
+  widthPx: 500,
   fontFamily: 'Roboto',
   fontSize: 16,
   fontWeight: '400',
   fontStyle: 'normal',
-  lineHeight: 16,
-  letterSpacing: 0,
+  lineHeightPx: 16,
+  letterSpacingPx: 0,
   textAlign: 'left',
   whiteSpace: 'normal',
-  color: '#000000'
+  color: '#ff0000',
+  opacity: 1,
+  // strokeColor: '#000000',
+  // strokeWidth: 0,
 }
 
 let canvasContext: CanvasRenderingContext2D | null = null;
@@ -67,17 +82,24 @@ function parsePx(value: string): number {
   return Number.isFinite(numeric) ? numeric : NaN;
 }
 
-function captureCssStyles(style: CSSStyleDeclaration): DomStyleSnapshot {
+function captureCssStyles(element: HTMLElement): TextStyles {
+  const style = window.getComputedStyle(element);
+  const { width } = element.getBoundingClientRect()
+
   return {
+      widthPx: width,
       fontFamily: style.fontFamily,
       fontSize: parsePx(style.fontSize) || 16,
       fontWeight: style.fontWeight,
       fontStyle: style.fontStyle,
-      lineHeight: computeLineHeight(style, parsePx(style.fontSize) || 16),
-      letterSpacing: parseLetterSpacing(style),
+      lineHeightPx: computeLineHeight(style, parsePx(style.fontSize) || 16),
+      letterSpacingPx: parseLetterSpacing(style),
       textAlign: (style.textAlign as CanvasTextAlign) || 'left',
-      whiteSpace: (style.whiteSpace as DomStyleSnapshot['whiteSpace']) || 'normal',
-      color: style.color
+      whiteSpace: (style.whiteSpace as TextStyles['whiteSpace']) || 'normal',
+      color: style.color,
+      opacity: parseFloat(style.opacity) || 1,
+      // strokeColor: style.webkitTextStrokeColor,
+      // strokeWidth: parseFloat(style.webkitTextStrokeWidth) || 0,
   };
 }
 
@@ -99,7 +121,7 @@ function parseLetterSpacing(style: CSSStyleDeclaration): number {
   return parsePx(raw) || 0;
 }
 
-function getMeasurementFromCanvas(style: DomStyleSnapshot, text: string) {
+function getMeasurementFromCanvas(style: TextStyles, text: string): CanvasRenderMeasurements {
   const ctx = getContext();
   ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
   ctx.textAlign = style.textAlign;
@@ -110,7 +132,7 @@ function getMeasurementFromCanvas(style: DomStyleSnapshot, text: string) {
   const fontAscent = metrics.fontBoundingBoxAscent ?? actualAscent;
   const fontDescent = metrics.fontBoundingBoxDescent ?? actualDescent;
 
-  const lineGap = Math.max(0, style.lineHeight - (actualAscent + actualDescent));
+  const lineGap = Math.max(0, style.lineHeightPx - (actualAscent + actualDescent));
   const baselineOffsetTop = actualAscent + lineGap * 0.5;
   const baselineOffsetBottom = actualDescent + lineGap * 0.5;
 
@@ -127,30 +149,27 @@ function getMeasurementFromCanvas(style: DomStyleSnapshot, text: string) {
 }
 
 export function collectDomTextMetrics(element: HTMLElement): DomTextMetrics {
-  const style = window.getComputedStyle(element);
-  const fontCssStyles = captureCssStyles(style);
-  const canvasRenderMeasurements = getMeasurementFromCanvas(fontCssStyles, element.textContent);
+  const textStyles = captureCssStyles(element);
+  const canvasRenderMeasurements = getMeasurementFromCanvas(textStyles, element.textContent);
   
-  const { width, height } = element.getBoundingClientRect()
+  const { width } = element.getBoundingClientRect()
 
   return {
     text: element.textContent,
-    fontCssStyles,
+    fontCssStyles: textStyles,
     canvasRenderMeasurements,
-    size: { width, height },
-    element
+    widthPx: width,
   }
 }
 
-export type MetricsContsructionOptions = { width: number, height: number, cssStyles?: Partial<DomStyleSnapshot> }
+export function constructDomTextMetrics(options: MSDFTextOptions): DomTextMetrics {
+  const cssStyles: TextStyles = {...DEFAULT_FONT_STYLES, ...options.textStyles }
+  const canvasRenderMeasurements = getMeasurementFromCanvas(cssStyles, options.text);
 
-export function constructDomTextMetrics(text: string, options: MetricsContsructionOptions = { width: 500, height: 500 }) {
-  const cssStyles: DomStyleSnapshot = {...DEFAULT_FONT_STYLES, ...options.cssStyles }
-  const canvasRenderMeasurements = getMeasurementFromCanvas(cssStyles, text);
   return {
-    text,
+    text: options.text,
     fontCssStyles: cssStyles,
     canvasRenderMeasurements,
-    size: { width: options.width, height: options.height },
+    widthPx: options.textStyles?.widthPx || canvasRenderMeasurements.width,
   }
 }

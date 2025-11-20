@@ -1,7 +1,7 @@
 import * as THREE from "three/webgpu";
 
 import type { BMFontJSON } from "@/types/bmfont-json";
-import { collectDomTextMetrics, type DomTextMetrics } from "@/MSDFText/measure";
+import { collectDomTextMetrics, TextStyles, type DomTextMetrics } from "@/MSDFText/measure";
 import { layoutText } from "./layout";
 import { buildGeometryAttributes } from "./geometry";
 
@@ -14,16 +14,23 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
   private width!: number;
   private height!: number;
 
-  private metrics: DomTextMetrics
+  private currentMetrics!: DomTextMetrics // Metrics last used to generate the geometry
+  private currentGlyphCount: number | null = null
   private font: BMFontJSON
+
+  get textStyles(): Omit<Partial<TextStyles>, 'color' | 'opacity'> { 
+    const { opacity, color, ...geometryStyles } = this.currentMetrics?.fontCssStyles || {}
+    return geometryStyles
+  }
+  get text(): string {
+    return this.currentMetrics?.text
+  }
   
   constructor(options: MSDFTextGeometryOptions) {
     super();
 
-    this.metrics = options.metrics
     this.font = options.font;
-
-    this.update()
+    this.update(options.metrics)
   }
 
   computeBoundingBox(): void {
@@ -33,26 +40,37 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
     )
   }
 
-  update() {
-    // Only update DOM metrics if we are tracking an element
-    if (this.metrics.element) {
-      // TODO: Cache results and only update if DOM element size, CSS attributes or text content change
-      this.metrics = collectDomTextMetrics(this.metrics.element);
-    }
-    
-    const { glyphs, width, height } = layoutText({ metrics: this.metrics, font: this.font });
-    const { positions, uvs, centers, indices, glpyhIndices } = buildGeometryAttributes({ glyphs, font: this.font, flipY: true })
+  public update(metrics: DomTextMetrics) {
+    // TODO: Compare against previously given metrics before recalculating    
+    const { glyphs, width, height } = layoutText({ metrics, font: this.font });
+    const { positions, uvs, centers, indices, glyphIndices, glyphCount } = buildGeometryAttributes({ glyphs, font: this.font, flipY: true })
   
     this.width = width;
     this.height = height;
 
-    this.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    this.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    this.setAttribute('center', new THREE.BufferAttribute(centers, 2));
-    this.setAttribute('glyphIndices', new THREE.BufferAttribute(glpyhIndices, 1));
-    this.setIndex(new THREE.BufferAttribute(indices, 1));
+    // If number of glyphs is the same, attr array lengths are the same and can update in place
+    // Slightly more efficient as reuses existing GPU buffer
+    if (this.currentGlyphCount == glyphCount) {
+      this.attributes.position.array.set(positions)
+      this.attributes.uv.array.set(uvs)
+      this.attributes.center.array.set(centers)
+
+      this.attributes.position.needsUpdate = true;
+      this.attributes.uv.needsUpdate = true;
+      this.attributes.center.needsUpdate = true;
+    } else {
+      this.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      this.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      this.setAttribute('center', new THREE.BufferAttribute(centers, 2));
+      this.setAttribute('glyphIndices', new THREE.BufferAttribute(glyphIndices, 1));
+      this.setIndex(new THREE.BufferAttribute(indices, 1));
+    }
 
     this.computeBoundingBox();
     this.computeBoundingSphere();
+
+    // Cache the previous metrics used to generate the geometry
+    this.currentMetrics = metrics
+    this.currentGlyphCount = glyphCount
   }
 } 

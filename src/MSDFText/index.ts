@@ -3,34 +3,56 @@ import * as THREE from 'three/webgpu'
 import type { BMFontJSON } from '@/types/bmfont-json'
 import { MSDFTextGeometry } from '@/MSDFTextGeometry';
 import { MSDFTextNodeMaterial } from '@/MSDFTextMaterial';
-import { collectDomTextMetrics, constructDomTextMetrics, type DomTextMetrics, type MetricsContsructionOptions } from '@/MSDFText/measure';
+import { collectDomTextMetrics, constructDomTextMetrics, TextStyles } from '@/MSDFText/measure';
 
-export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
-  readonly element: HTMLElement | undefined
-  
-  constructor(metrics: DomTextMetrics, font: { atlas: THREE.Texture, data: BMFontJSON }) {
-    const isSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
+export type MSDFTextOptions = { text: string, textStyles?: Partial<TextStyles> }
+
+export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {  
+  constructor(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
+    const metrics = constructDomTextMetrics(options)
     
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
-    const material = new MSDFTextNodeMaterial(font.atlas, { color: metrics.fontCssStyles.color, isSmooth })
+    const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })
+    
+    super(geometry, material)
+  }
+
+  public update(options: Partial<MSDFTextOptions>) {
+    const currentOptions = this.getCurrentOptions()
+    const mergedOptions: MSDFTextOptions = { ...currentOptions, ...options, textStyles: { ...currentOptions.textStyles, ...options.textStyles } }
+    const metrics = constructDomTextMetrics(mergedOptions)
+    this.geometry.update(metrics)
+    this.material.update(metrics)
+  }
+
+  private getCurrentOptions(): MSDFTextOptions {
+    return {
+      text: this.geometry.text,
+      textStyles: {
+        ...this.geometry.textStyles,
+        color: this.material.color,
+        opacity: this.material.opacity
+      }
+    }
+  }
+}
+
+export class SyncMSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
+  readonly element: HTMLElement | undefined
+  
+  constructor(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
+    const metrics = collectDomTextMetrics(element)
+        
+    const geometry = new MSDFTextGeometry({ metrics, font: font.data })
+    const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })
     
     super(geometry, material)
     
-    this.element = metrics.element
-  }
-
-  public static fromString(text: string, font: { atlas: THREE.Texture, data: BMFontJSON }, styleOptions?: MetricsContsructionOptions) {
-    const metrics = constructDomTextMetrics(text, styleOptions)
-    return new MSDFText(metrics, font)
-  }
-
-  public static fromDomElement(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
-    const metrics = collectDomTextMetrics(element)
-    return new MSDFText(metrics, font)
+    this.element = element
   }
 
   // Update the transform of the mesh to match the position of a DOM element on a perpendicular plane at a given depth from the camera
-  public alignWithElement(camera: { position: THREE.Vector3, quaternion: THREE.Quaternion, fov: number, aspect: number }, depthFromCamera: number = 5) {
+  public update(camera: { position: THREE.Vector3, quaternion: THREE.Quaternion, fov: number, aspect: number }, depthFromCamera: number = 5) {
     if (!this.element) {
       console.log("Unable to align MSDFText with element when using the fromString constructor")
       return
@@ -61,6 +83,8 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     this.quaternion.copy(quaternionWorldSpace)
 
     // Update geometry
-    this.geometry.update()
+    const metrics = collectDomTextMetrics(this.element)
+    this.geometry.update(metrics)
+    this.material.update(metrics)
   }
 }

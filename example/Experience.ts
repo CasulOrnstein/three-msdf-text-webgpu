@@ -8,6 +8,7 @@ import { Debug } from "./Debug";
 import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import type { BMFontJSON } from "@/types/bmfont-json";
 import { MSDFText, MSDFTextOptions, SyncMSDFText } from "@/MSDFText";
+import { MSDFTextNodeMaterialOptions } from "@/MSDFTextMaterial";
 
 export class Experience {
   private static _instance: Experience | null = null;
@@ -60,6 +61,12 @@ export class Experience {
       opacity: 1
     }
   }
+  public msdfMaterialOptions: Partial<MSDFTextNodeMaterialOptions> = {
+    transparent: true,
+    alphaTest: 0.01,
+    threshold: 0.2,
+    isSmooth: 0
+  }
   public showBoundingBox: boolean = false
 
   // region: Constructor
@@ -102,8 +109,11 @@ export class Experience {
       Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'letterSpacingPx', { min: -5, max: 5 }).on('change', () => this.updateMSDFText() )
       Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'whiteSpace', { options: { normal :'normal', pre: 'pre', nowrap: 'nowrap' } }).on('change', () => this.updateMSDFText() )
       
-      // Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'color').on('change', () => this.updateMSDFText() )
-      // Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'opacity', { min: 0,  max: 1 }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this.mesh.material!, 'color')
+      Debug.pane?.addBinding(this.mesh.material!, 'opacity', { min: 0,  max: 1 })
+      
+      Debug.pane?.addBinding(this.mesh.material!, 'isSmooth')
+      Debug.pane?.addBinding(this.mesh.material!, 'threshold', { min: 0, max: 1 })
     });
   }
 

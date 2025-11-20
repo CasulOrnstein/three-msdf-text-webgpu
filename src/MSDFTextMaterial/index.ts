@@ -1,6 +1,6 @@
 // THREE WEBGPU
 import * as THREE from 'three/webgpu'
-import { uv, mix, uniform, texture, fwidth, clamp, smoothstep, max, min, div, sub, add, mul, oneMinus } from 'three/tsl';
+import { uv, mix, uniform, texture, fwidth, clamp, smoothstep, max, min, div, sub, add, mul, oneMinus, materialOpacity } from 'three/tsl';
 
 // THREE
 import { Color } from 'three';
@@ -16,38 +16,36 @@ export interface MSDFTextNodeMaterialOptions {
 export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
   private map: THREE.Texture // MSDF atlas texture
 
-  constructor(options: { fontAtlas: THREE.Texture, metrics: DomTextMetrics, materialOptions?: Partial<MSDFTextNodeMaterialOptions> }) {
+  private colorUniform: THREE.UniformNode<THREE.Color> = uniform(new THREE.Color('#000000'))
+  private isSmoothUniform: THREE.UniformNode<number> = uniform(0)
+  private thresholdUniform: THREE.UniformNode<number> = uniform(0.2)
+
+  // Getters & Setters
+  public get color() { return `#${this.colorUniform.value.getHexString()}` }
+  public set color(val: THREE.ColorRepresentation) { this.colorUniform.value.set(val) }
+
+  public get isSmooth() { return Boolean(this.isSmoothUniform.value) }
+  public set isSmooth(val: boolean) { this.isSmoothUniform.value = val ? 1 : 0 }
+
+  public get threshold() { return this.thresholdUniform.value }
+  public set threshold(val: number) { this.thresholdUniform.value = THREE.MathUtils.clamp(val, 0, 1) }
+
+  constructor(options: { fontAtlas: THREE.Texture, metrics: DomTextMetrics }) {
     super();
 
-    const { fontAtlas, metrics, materialOptions } = options
+    const { fontAtlas, metrics } = options
 
-    const defaultOptions: MSDFTextNodeMaterialOptions = {
-      transparent: true,
-      alphaTest: 0.01,
-      threshold: 0.2,
-      isSmooth: metrics.fontCssStyles.fontSize < 20 ? 1 : 0 // Default isSmooth to true if font size is <20px
-    };
-
-    /**
-     * Build in properties
-     */
-    this.transparent = materialOptions?.transparent || defaultOptions.transparent;
-    this.alphaTest = materialOptions?.alphaTest || defaultOptions.alphaTest;
-
-    /**
-     * Uniforms: basic
-     */
-    const opacity = uniform(metrics.fontCssStyles.opacity);
-    const color = uniform(new Color(metrics.fontCssStyles.color));
+    // Set defaults
+    this.alphaTest = 0.01
+    this.transparent = true
     this.map = fontAtlas;
 
-    /**
-     * Uniforms small font sizes
-     */
-    const defaultIsSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
+    this.update(metrics)
 
-    const isSmooth = uniform(materialOptions?.isSmooth || defaultIsSmooth);
-    const threshold = uniform(materialOptions?.threshold || defaultOptions.threshold);
+
+    // Set default is smooth
+    const defaultIsSmooth = metrics.fontCssStyles.fontSize < 20 ? 1 : 0;
+    this.isSmoothUniform.value = defaultIsSmooth
 
     /**
      * Uniforms: stroke
@@ -76,8 +74,8 @@ export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
     /**
      * Fill Smooth
      */
-    const smoothAlpha = smoothstep(sub(threshold, afwidth), add(threshold, afwidth), sigDist);
-    alpha = mix(alpha, smoothAlpha, isSmooth);
+    const smoothAlpha = smoothstep(sub(this.thresholdUniform, afwidth), add(this.thresholdUniform, afwidth), sigDist);
+    alpha = mix(alpha, smoothAlpha, this.isSmoothUniform);
 
     /**
      * Strokes
@@ -91,11 +89,11 @@ export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
     /**
      * Strokes Smooth
      */
-    const smoothOutset = smoothstep(sub(threshold, afwidth), add(threshold, afwidth), sigDistOutset);
-    const smoothInset = oneMinus(smoothstep(sub(threshold, afwidth), add(threshold, afwidth), sigDistInset));
+    const smoothOutset = smoothstep(sub(this.thresholdUniform, afwidth), add(this.thresholdUniform, afwidth), sigDistOutset);
+    const smoothInset = oneMinus(smoothstep(sub(this.thresholdUniform, afwidth), add(this.thresholdUniform, afwidth), sigDistInset));
 
-    outset = mix(outset, smoothOutset, isSmooth);
-    inset = mix(inset, smoothInset, isSmooth);
+    outset = mix(outset, smoothOutset, this.isSmoothUniform);
+    inset = mix(inset, smoothInset, this.isSmoothUniform);
 
     const border = mul(outset, inset);
 
@@ -114,7 +112,14 @@ export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
     /**
      * Outputs: Filled + stroked
      */
-    this.colorNode = mix(color, strokeColor, border);
-    this.opacityNode = mul(opacity, add(alpha, border));
+    this.colorNode = mix(this.colorUniform, strokeColor, border);
+    this.opacityNode = mul(materialOpacity, add(alpha, border));
+  }
+
+  public update(metrics: DomTextMetrics) {
+    this.colorUniform.value.set(metrics.fontCssStyles.color)
+    this.opacity = metrics.fontCssStyles.opacity
+
+    this.needsUpdate = true
   }
 }

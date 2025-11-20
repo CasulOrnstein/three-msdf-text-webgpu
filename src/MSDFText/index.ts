@@ -20,6 +20,7 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
   public update(options: MSDFTextOptions) {
     const metrics = constructDomTextMetrics(options)
     this.geometry.update(metrics)
+    this.material.update(metrics)
   }
 
   public updateText(text: string) {

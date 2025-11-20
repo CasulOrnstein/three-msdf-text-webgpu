@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from "three/webgpu";
 
 import { Sizes, Triggers as SizesTriggers } from "./utils/Sizes";
 import { Time, Triggers as TimeTriggers } from "./utils/Time";
@@ -9,6 +9,10 @@ import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import type { BMFontJSON } from "@/types/bmfont-json";
 import { MSDFText, MSDFTextOptions, SyncMSDFText } from "@/MSDFText";
 import { FolderApi } from "tweakpane";
+import { materialColor, materialOpacity, positionGeometry } from "three/tsl";
+import { boilingLines, rainbowWave, spinText } from "./TextEffects";
+
+type TextEffectType = 'none' | 'rainbow' | 'boiling' | 'spin'
 
 export class Experience {
   private static _instance: Experience | null = null;
@@ -54,11 +58,16 @@ export class Experience {
 
   private font!: Font;
   private fontAtlas!: THREE.Texture
+  private noiseTexture!: THREE.Texture
   private fontLoader: FontLoader = new FontLoader();
   private textureLoader = new THREE.TextureLoader();
 
-  private standaloneMeshFolder: FolderApi | undefined
-  private domSyncMeshFolder: FolderApi | undefined
+
+  public currentEffect: TextEffectType = 'none'
+  private textEffectsMap: Partial<Record<TextEffectType, { positionNode?: THREE.Node, opacityNode?: THREE.Node, colorNode?: THREE.Node }>> = {}
+
+  private standaloneMeshFolder?: FolderApi
+  private domSyncMeshFolder?: FolderApi
 
   public msdfTextOptions: MSDFTextOptions = {
     text: "MSDF Text",
@@ -91,12 +100,14 @@ export class Experience {
     
       // MSDF Text Meshes
       this.msdfTextMesh = new MSDFText(this.msdfTextOptions, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.msdfTextMesh.material.side = THREE.DoubleSide
       this.msdfTextMesh.visible = !this.showSyncMsdfText
-      this.msdfTextMesh.scale.set(0.01, 0.01, 0.01)
+      this.msdfTextMesh.scale.set(0.01, 0.01, 1)
       this.msdfTextMesh.position.set(-1, 0, 0) // Somewhat center the text (it has a top left pivot)
       this.scene.add(this.msdfTextMesh)
 
       this.syncMsdfTextMesh = new SyncMSDFText(this.domElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.syncMsdfTextMesh.material.side = THREE.DoubleSide
       this.syncMsdfTextMesh.visible = this.showSyncMsdfText
       this.syncMsdfTextMesh.update(this.camera.instance)
       this.scene.add(this.syncMsdfTextMesh)
@@ -108,8 +119,14 @@ export class Experience {
       this.scene.add( this.msdfTextMeshBox );
       this.scene.add( this.syncMsdfTextMeshBox );
 
+      // Text effects
+      this.textEffectsMap['none'] = {}
+      this.textEffectsMap['rainbow'] = rainbowWave()
+      this.textEffectsMap['boiling'] = boilingLines(this.fontAtlas, this.noiseTexture)
+      this.textEffectsMap['spin'] = spinText()
+
       // Setup Debug
-      Debug.pane?.addBinding(this, 'showSyncMsdfText', { label: 'Mesh Type', options: { "DOM synced": true, "Standalone": false }}).on('change', (val) => {
+      Debug.pane?.addBinding(this, 'showSyncMsdfText', { label: 'Mesh Type', options: { "DOM-Synced": true, "Standalone": false }}).on('change', (val) => {
         this.msdfTextMesh.visible = !this.showSyncMsdfText
         this.syncMsdfTextMesh.visible = this.showSyncMsdfText 
         this.updateBoundingBoxVisibilty()
@@ -124,6 +141,18 @@ export class Experience {
       })
 
       Debug.pane?.addBinding(this, 'showBoundingBox', { label: 'Show Bounding Box'}).on('change', () => { this.updateBoundingBoxVisibilty() })
+      Debug.pane?.addBinding(this, 'currentEffect', { label: 'Shader Effect', options: { "None": 'none', "Rainbow Wave": 'rainbow', "Boiling Lines": 'boiling', "Spinning Letters": 'spin' }}).on("change", (ev) => {
+        const { positionNode, opacityNode, colorNode } = this.textEffectsMap[ev.value]!
+        this.msdfTextMesh.material.positionNode = positionNode || positionGeometry;
+        this.msdfTextMesh.material.opacityNode = opacityNode || this.msdfTextMesh.material.defaultOpacityNode;
+        this.msdfTextMesh.material.colorNode = colorNode || this.msdfTextMesh.material.defaultColorNode;
+        this.msdfTextMesh.material.needsUpdate = true
+        
+        this.syncMsdfTextMesh.material.positionNode = positionNode || positionGeometry;
+        this.syncMsdfTextMesh.material.opacityNode = opacityNode || this.msdfTextMesh.material.defaultOpacityNode;
+        this.syncMsdfTextMesh.material.colorNode = colorNode || this.msdfTextMesh.material.defaultColorNode;
+        this.syncMsdfTextMesh.material.needsUpdate = true
+      } )
       
       this.standaloneMeshFolder = Debug.pane?.addFolder({ title: 'Standalone Text Options', hidden: this.showSyncMsdfText })
       this.standaloneMeshFolder?.addBinding(this.msdfTextOptions, 'text', { label: 'Text'}).on('change', () => this.updateMSDFText() )
@@ -169,6 +198,7 @@ export class Experience {
     await this.renderer.initPromise;
     this.font = await this.fontLoader.loadAsync("/fonts/roboto-regular.json"),
     this.fontAtlas = await this.textureLoader.loadAsync("/fonts/roboto-regular.png")
+    this.noiseTexture = await this.textureLoader.loadAsync("/seamless_perlin2_256.png")
     this.initialised = true;
   }
 

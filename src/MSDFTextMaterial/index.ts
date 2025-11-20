@@ -17,6 +17,9 @@ export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
   private isSmoothUniform: THREE.UniformNode<number> = uniform(0)
   private thresholdUniform: THREE.UniformNode<number> = uniform(0.2)
 
+  readonly defaultColorNode: THREE.Node
+  readonly defaultOpacityNode: THREE.Node
+
   // Getters & Setters
   public get color() { return `#${this.colorUniform.value.getHexString()}` }
   public set color(val: THREE.ColorRepresentation) { this.colorUniform.value.set(val) }
@@ -109,8 +112,11 @@ export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
     /**
      * Outputs: Filled + stroked
      */
-    this.colorNode = mix(this.colorUniform, strokeColor, border);
-    this.opacityNode = mul(materialOpacity, add(alpha, border));
+    this.defaultColorNode = mix(this.colorUniform, strokeColor, border);
+    this.defaultOpacityNode = mul(materialOpacity, add(alpha, border));
+    
+    this.colorNode = this.defaultColorNode;
+    this.opacityNode = this.defaultOpacityNode;
   }
 
   public update(metrics: DomTextMetrics) {

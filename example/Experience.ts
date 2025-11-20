@@ -195,9 +195,9 @@ export class Experience {
   // region: Methods
   private async init() {
     await this.renderer.initPromise;
-    this.font = await this.fontLoader.loadAsync("/fonts/roboto-regular.json"),
-    this.fontAtlas = await this.textureLoader.loadAsync("/fonts/roboto-regular.png")
-    this.noiseTexture = await this.textureLoader.loadAsync("/seamless_perlin2_256.png")
+    this.font = await this.fontLoader.loadAsync(import.meta.env.BASE_URL + "fonts/roboto-regular.json"),
+    this.fontAtlas = await this.textureLoader.loadAsync(import.meta.env.BASE_URL + "fonts/roboto-regular.png")
+    this.noiseTexture = await this.textureLoader.loadAsync(import.meta.env.BASE_URL + "seamless_perlin2_256.png")
     this.initialised = true;
   }
 

@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "example": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "build-ghpages": "vite build --mode ghpages"
   },
   "dependencies": {
     "word-wrapper": "^1.0.7"

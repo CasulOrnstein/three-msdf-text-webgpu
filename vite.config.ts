@@ -2,13 +2,11 @@ import { defineConfig } from "vite";
 import path from "path";
 import dts from 'vite-plugin-dts';
 
-export default defineConfig(({ command }) => {
-  const isDev = command === "serve"; // true when running `npm run dev`
+export default defineConfig(({ command, mode }) => {
+  const isDev = command === "serve";
+  const isGh = mode === "ghpages";
 
   if (isDev) {
-    // -------------------------------------------------------
-    // Example environment (npm run dev)
-    // -------------------------------------------------------
     return {
       root: "example",
       resolve: {
@@ -18,6 +16,21 @@ export default defineConfig(({ command }) => {
       },
       server: {
         port: 5173,
+      },
+    };
+  }
+
+  if (isGh) {
+    return {
+      root: "example",
+      publicDir: "public",
+      base: "/three-msdf-text-webgpu/",
+      build: {
+        outDir: "../dist-gh",   // build example site
+        emptyOutDir: true,
+      },
+      resolve: {
+        alias: { "@": path.resolve(__dirname, "./src") },
       },
     };
   }

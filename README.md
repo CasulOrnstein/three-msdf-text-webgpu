@@ -33,10 +33,22 @@ const textureLoader = new THREE.TextureLoader();
 const font = await this.fontLoader.loadAsync("/font/Roboto-Regular-msdf.json"), 
 const atlas = await this.textureLoader.loadAsync("/font/Roboto-Regular.png")
 
-const textMesh = MSDFText.fromString(
-  { text: "Lorem ipsum", textStyles: { widthPx: 300, color: '#FFFFFF', fontFamily: 'Roboto' } }
-  { atlas, data: font.data as unknown as BMFontJSON },
-)
+const options = {
+    text: "MSDF Text",
+    textStyles: {
+      widthPx: 500,
+      fontFamily: "Roboto",
+      fontSize: 32,
+      fontWeight: "400",
+      lineHeightPx: 50,
+      letterSpacingPx: 0,
+      textAlign: 'left',
+      whiteSpace: 'normal',
+      color: '#ff0000',
+      opacity: 1
+    }
+  }
+const textMesh = new MSDFText(options, { atlas, data: font.data })
 ```
 
 Note: The width/height of the resultant geometry will be equal to the pixel width/height of the rendered text, so the resulting mesh will need to be scaled.
@@ -51,11 +63,14 @@ With `textStyles`:
 - `fontSize` (number px): Default - 16
 - `fontWeight` (string): Default - "400"
 - `fontStyle` (string): Default - "normal"
-- `lineHeight` (number px): Default - 16
-- `letterSpacing` (number px): Default - 0
+- `lineHeightPx` (number): Default - 16
+- `letterSpacingPx` (number): Default - 0
 - `textAlign` ("center" | "end" | "left" | "right" | "start"): Default - "left"
 - `whiteSpace` ("normal" | "nowrap" | "pre" | "pre-wrap" | "pre-line" | "break-spaces"): Default - "normal"
 - `color` (string): Default - "#000000"
+- `opacity` (number): Default - 1
+
+The method `.update(options)` can be called with partial options to update the text geometry and material.
 
 ### From DOM element
 By passing a HTMLElement, the styling of the text will match that of the element.
@@ -73,14 +88,20 @@ const font = await this.fontLoader.loadAsync("/font/Roboto-Regular-msdf.json"),
 const atlas = await this.textureLoader.loadAsync("/font/Roboto-Regular.png")
 
 const textElement = document.querySelector<HTMLDivElement>('[data-3d]')!;
-const textMesh = MSDFText.fromDomElement(
+const textMesh = new SyncMSDFText(
   textElement,
   { atlas, data: font.data as unknown as BMFontJSON },
 )
 ```
 
-Using this method also allows `mesh.alignWithElement(camera: THREE.Camera)` to be called which will update the transform of the mesh to align with the DOM element in the camera's view at a given depth (5 units by default).
+Using this method also allows `mesh.update(camera: THREE.Camera)` to be called which will update the transform of the mesh to align with the DOM element in the camera's view at a given depth (5 units by default).
 
 ## Examples:
 
-See this [blog page](https://www.madewithdove.co.uk/blog/webgpu-text) for an example of the package in action.
+To run the example demo locally, run:
+```bash
+npm i
+npm run example
+```
+
+For more information on this package, see this [blog page](https://www.madewithdove.co.uk/blog/webgpu-text).

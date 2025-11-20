@@ -76,8 +76,7 @@ export class Experience {
       widthPx: 500,
       lineHeightPx: 50,
       letterSpacingPx: 0,
-      whiteSpace: 'normal',
-      opacity: 1
+      whiteSpace: 'normal'
     }
   }
 

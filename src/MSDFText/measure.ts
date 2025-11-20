@@ -1,3 +1,4 @@
+import * as THREE from 'three/webgpu'
 import { MSDFTextOptions } from "@/MSDFText";
 
 export interface DomTextMetrics {
@@ -19,6 +20,7 @@ interface CanvasRenderMeasurements {
 }
 
 export interface TextStyles {
+  // Geometry related
   widthPx: number;
   fontFamily: string;
   fontSize: number;
@@ -28,7 +30,8 @@ export interface TextStyles {
   letterSpacingPx: number;
   textAlign: CanvasTextAlign; // Currently unused in rendering
   whiteSpace: 'normal' | 'nowrap' | 'pre'; // TODO: fix pre
-  color: string
+  // Material related
+  color: THREE.ColorRepresentation
   opacity: number
   // TODO: Fix stroke rendering
   // strokeColor: string
@@ -45,7 +48,7 @@ const DEFAULT_FONT_STYLES: TextStyles = {
   letterSpacingPx: 0,
   textAlign: 'left',
   whiteSpace: 'normal',
-  color: '#000000',
+  color: '#ff0000',
   opacity: 1,
   // strokeColor: '#000000',
   // strokeWidth: 0,

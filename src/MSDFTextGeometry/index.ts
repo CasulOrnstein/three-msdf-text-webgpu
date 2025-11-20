@@ -1,7 +1,7 @@
 import * as THREE from "three/webgpu";
 
 import type { BMFontJSON } from "@/types/bmfont-json";
-import { collectDomTextMetrics, type DomTextMetrics } from "@/MSDFText/measure";
+import { collectDomTextMetrics, TextStyles, type DomTextMetrics } from "@/MSDFText/measure";
 import { layoutText } from "./layout";
 import { buildGeometryAttributes } from "./geometry";
 
@@ -14,9 +14,17 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
   private width!: number;
   private height!: number;
 
-  private currentMetrics: DomTextMetrics | null = null // Metrics last used to generate the geometry
+  private currentMetrics!: DomTextMetrics // Metrics last used to generate the geometry
   private currentGlyphCount: number | null = null
   private font: BMFontJSON
+
+  get textStyles(): Omit<Partial<TextStyles>, 'color' | 'opacity'> { 
+    const { opacity, color, ...geometryStyles } = this.currentMetrics?.fontCssStyles || {}
+    return geometryStyles
+  }
+  get text(): string {
+    return this.currentMetrics?.text
+  }
   
   constructor(options: MSDFTextGeometryOptions) {
     super();

@@ -29,6 +29,7 @@ export class Debug {
       this._debugPane.element.style.top = "0";
       this._debugPane.element.style.right = "0";
       this._debugPane.element.style.zIndex = "10";
+      this._debugPane.element.style.width = "350px"
       this._stats = new Stats({ trackGPU: true, horizontal: false });
       Experience.getInstance().parentElement.appendChild(this._stats.dom);
     }

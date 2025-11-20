@@ -1,9 +1,6 @@
-// THREE WEBGPU
 import * as THREE from 'three/webgpu'
 import { uv, mix, uniform, texture, fwidth, clamp, smoothstep, max, min, div, sub, add, mul, oneMinus, materialOpacity } from 'three/tsl';
 
-// THREE
-import { Color } from 'three';
 import { DomTextMetrics } from '@/MSDFText/measure';
 
 export interface MSDFTextNodeMaterialOptions {
@@ -16,7 +13,7 @@ export interface MSDFTextNodeMaterialOptions {
 export class MSDFTextNodeMaterial extends THREE.NodeMaterial {
   private map: THREE.Texture // MSDF atlas texture
 
-  private colorUniform: THREE.UniformNode<THREE.Color> = uniform(new THREE.Color('#000000'))
+  private colorUniform: THREE.UniformNode<THREE.Color> = uniform(new THREE.Color('#ff0000'))
   private isSmoothUniform: THREE.UniformNode<number> = uniform(0)
   private thresholdUniform: THREE.UniformNode<number> = uniform(0.2)
 

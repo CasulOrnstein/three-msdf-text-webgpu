@@ -8,7 +8,7 @@ import { Debug } from "./Debug";
 import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import type { BMFontJSON } from "@/types/bmfont-json";
 import { MSDFText, MSDFTextOptions, SyncMSDFText } from "@/MSDFText";
-import { MSDFTextNodeMaterialOptions } from "@/MSDFTextMaterial";
+import { FolderApi } from "tweakpane";
 
 export class Experience {
   private static _instance: Experience | null = null;
@@ -41,33 +41,33 @@ export class Experience {
 
   private initialised: boolean = false;
 
-  private mesh!: MSDFText
-  private meshBox!: THREE.BoxHelper
+  private msdfTextMesh!: MSDFText
+  private syncMsdfTextMesh!: SyncMSDFText
+  
+  private msdfTextMeshBox!: THREE.BoxHelper
+  private syncMsdfTextMeshBox!: THREE.BoxHelper
+
+  public showSyncMsdfText: boolean = false
+  public showBoundingBox: boolean = false
 
   private font!: Font;
   private fontAtlas!: THREE.Texture
   private fontLoader: FontLoader = new FontLoader();
   private textureLoader = new THREE.TextureLoader();
 
+  private standaloneMeshFolder: FolderApi | undefined
+
   public msdfTextOptions: MSDFTextOptions = {
-    text: "Lorem Ipsum",
+    text: "MSDF Text",
     textStyles: {
       fontSize: 32,
       widthPx: 500,
       lineHeightPx: 50,
       letterSpacingPx: 0,
       whiteSpace: 'normal',
-      color: '#ff0000',
       opacity: 1
     }
   }
-  public msdfMaterialOptions: Partial<MSDFTextNodeMaterialOptions> = {
-    transparent: true,
-    alphaTest: 0.01,
-    threshold: 0.2,
-    isSmooth: 0
-  }
-  public showBoundingBox: boolean = false
 
   // region: Constructor
   constructor(readonly parentElement: HTMLElement) {
@@ -86,40 +86,69 @@ export class Experience {
       this.sizes.on(SizesTriggers.Resize, () => { this.resize() });
       this.time.on(TimeTriggers.Render, (deltaMs: number) => { this.update(deltaMs) });
     
-      const textElement = document.getElementById('test-text')!;
-      // this.mesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
-      this.mesh = new MSDFText(this.msdfTextOptions, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
-      this.mesh.scale.set(0.01, 0.01, 0.01)
-      // this.mesh.position.set
-      
-      // this.mesh.update(this.camera.instance)
-      this.scene.add(this.mesh)
+      // MSDF Text Meshes
+      this.msdfTextMesh = new MSDFText(this.msdfTextOptions, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.msdfTextMesh.visible = !this.showSyncMsdfText
+      this.msdfTextMesh.scale.set(0.01, 0.01, 0.01)
+      this.msdfTextMesh.position.set(-1, 0, 0) // Somewhat center the text (it has a top left pivot)
+      this.scene.add(this.msdfTextMesh)
 
-      this.meshBox = new THREE.BoxHelper( this.mesh, 0xffff00 );
-      this.scene.add( this.meshBox );
-      this.meshBox.visible = this.showBoundingBox
+      const textElement = document.getElementById('test-text')!;
+      this.syncMsdfTextMesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.syncMsdfTextMesh.visible = this.showSyncMsdfText
+      this.syncMsdfTextMesh.update(this.camera.instance)
+      this.scene.add(this.syncMsdfTextMesh)
+
+      // Bounding boxes
+      this.msdfTextMeshBox = new THREE.BoxHelper(this.msdfTextMesh, 0xffff00,);
+      this.syncMsdfTextMeshBox = new THREE.BoxHelper(this.syncMsdfTextMesh, 0xffff00,);
+      this.updateBoundingBoxVisibilty()
+      this.scene.add( this.msdfTextMeshBox );
+      this.scene.add( this.syncMsdfTextMeshBox );
 
       // Setup Debug
-      Debug.pane?.addBinding(this.meshBox, 'visible', { label: 'Show bounding box'})//.on('change', () => { this.meshBox.visible =  )
-      Debug.pane?.addBinding(this.msdfTextOptions, 'text').on('change', () => this.updateMSDFText() )
-      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'widthPx', { min: 50, max: 1000 }).on('change', () => this.updateMSDFText() )
-      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'fontSize', { min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
-      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'lineHeightPx', { min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
-      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'lineHeightPx', { min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
-      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'letterSpacingPx', { min: -5, max: 5 }).on('change', () => this.updateMSDFText() )
-      Debug.pane?.addBinding(this.msdfTextOptions.textStyles!, 'whiteSpace', { options: { normal :'normal', pre: 'pre', nowrap: 'nowrap' } }).on('change', () => this.updateMSDFText() )
+      Debug.pane?.addBinding(this, 'showSyncMsdfText', { label: 'Mesh Type', options: { "DOM synced": true, "Standalone": false }}).on('change', (val) => {
+        this.msdfTextMesh.visible = !this.showSyncMsdfText
+        this.syncMsdfTextMesh.visible = this.showSyncMsdfText 
+        this.updateBoundingBoxVisibilty()
+        this.updateMSDFText()
+
+        if (this.standaloneMeshFolder) {
+          this.standaloneMeshFolder.hidden = this.showSyncMsdfText
+        }
+      })
+
+      Debug.pane?.addBinding(this, 'showBoundingBox', { label: 'Show Bounding Box'}).on('change', () => { this.updateBoundingBoxVisibilty() })
       
-      Debug.pane?.addBinding(this.mesh.material!, 'color')
-      Debug.pane?.addBinding(this.mesh.material!, 'opacity', { min: 0,  max: 1 })
+      this.standaloneMeshFolder = Debug.pane?.addFolder({ title: 'Standalone Text Options', hidden: this.showSyncMsdfText })
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions, 'text', { label: 'Text'}).on('change', () => this.updateMSDFText() )
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'widthPx', { label: 'Width (px)', min: 50, max: 1000 }).on('change', () => this.updateMSDFText() )
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'fontSize', { label: 'Font Size (px)', min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'lineHeightPx', { label: 'Line Height (px)', min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'letterSpacingPx', { label: 'Letter Spacing (px)', min: -5, max: 5 }).on('change', () => this.updateMSDFText() )
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'whiteSpace', { label: 'Whitespace', options: { normal :'normal', pre: 'pre', nowrap: 'nowrap' } }).on('change', () => this.updateMSDFText() )
       
-      Debug.pane?.addBinding(this.mesh.material!, 'isSmooth')
-      Debug.pane?.addBinding(this.mesh.material!, 'threshold', { min: 0, max: 1 })
+      this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'color', { label: 'Color' })
+      this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'opacity', { label: 'Opacity', min: 0,  max: 1 })
+      
+      this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'isSmooth', { label: 'Is Smooth? (small text)'})
+      this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'threshold', { label: 'Smoothing Threshold', min: 0, max: 1 })
     });
   }
 
   private updateMSDFText() {
-    this.mesh.update(this.msdfTextOptions)
-    this.meshBox.update()
+    if (this.showSyncMsdfText) {
+      this.syncMsdfTextMesh.update(this.camera.instance)
+      this.syncMsdfTextMeshBox.update()
+    } else {
+      this.msdfTextMesh.update(this.msdfTextOptions)
+      this.msdfTextMeshBox.update()
+    }
+  }
+
+  private updateBoundingBoxVisibilty() {
+    this.msdfTextMeshBox.visible = this.showBoundingBox && !this.showSyncMsdfText
+    this.syncMsdfTextMeshBox.visible = this.showBoundingBox && this.showSyncMsdfText
   }
 
   // region: Methods
@@ -131,8 +160,7 @@ export class Experience {
   }
 
   private resize() {
-    // this.mesh.update(this.camera.instance)
-    this.meshBox.update()
+    this.updateMSDFText()
     this.camera.resize();
     this.renderer.resize();
   }

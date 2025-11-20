@@ -7,7 +7,7 @@ import { collectDomTextMetrics, constructDomTextMetrics, TextStyles } from '@/MS
 
 export type MSDFTextOptions = { text: string, textStyles?: Partial<TextStyles> }
 
-export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {
+export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial> {  
   constructor(options: MSDFTextOptions, font: { atlas: THREE.Texture, data: BMFontJSON }) {
     const metrics = constructDomTextMetrics(options)
     
@@ -17,14 +17,27 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     super(geometry, material)
   }
 
-  public update(options: MSDFTextOptions) {
-    const metrics = constructDomTextMetrics(options)
+  public update(options: Partial<MSDFTextOptions>) {
+    const currentOptions = this.getCurrentOptions()
+    const mergedOptions: MSDFTextOptions = { ...currentOptions, ...options, textStyles: { ...currentOptions.textStyles, ...options.textStyles } }
+    const metrics = constructDomTextMetrics(mergedOptions)
     this.geometry.update(metrics)
     this.material.update(metrics)
   }
 
   public updateText(text: string) {
     this.geometry.updateText(text)
+  }
+
+  private getCurrentOptions(): MSDFTextOptions {
+    return {
+      text: this.geometry.text,
+      textStyles: {
+        ...this.geometry.textStyles,
+        color: this.material.color,
+        opacity: this.material.opacity
+      }
+    }
   }
 }
 
@@ -33,6 +46,7 @@ export class SyncMSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMater
   
   constructor(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
     const metrics = collectDomTextMetrics(element)
+    console.log(metrics)
         
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
     const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })

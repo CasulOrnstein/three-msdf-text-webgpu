@@ -73,19 +73,4 @@ export class MSDFTextGeometry extends THREE.BufferGeometry {
     this.currentMetrics = metrics
     this.currentGlyphCount = glyphCount
   }
-
-  // Update text only while reusing existing styles
-  public updateText(text: string) {
-    if (!this.currentMetrics) {
-      console.warn("Unable to update text of MSDFGeometry, no previous generated metrics.")
-      return
-    }
-    const updatedMetrics: DomTextMetrics = { ...this.currentMetrics, text }
-    this.update(updatedMetrics)
-  }
-
-  public updateFromDomElement(element: HTMLElement) {
-    const updatedMetrics = collectDomTextMetrics(element)
-    this.update(updatedMetrics)
-  }
 } 

@@ -25,10 +25,6 @@ export class MSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMaterial>
     this.material.update(metrics)
   }
 
-  public updateText(text: string) {
-    this.geometry.updateText(text)
-  }
-
   private getCurrentOptions(): MSDFTextOptions {
     return {
       text: this.geometry.text,
@@ -46,7 +42,6 @@ export class SyncMSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMater
   
   constructor(element: HTMLElement, font: { atlas: THREE.Texture, data: BMFontJSON }) {
     const metrics = collectDomTextMetrics(element)
-    console.log(metrics)
         
     const geometry = new MSDFTextGeometry({ metrics, font: font.data })
     const material = new MSDFTextNodeMaterial({ fontAtlas: font.atlas, metrics })
@@ -88,6 +83,8 @@ export class SyncMSDFText extends THREE.Mesh<MSDFTextGeometry, MSDFTextNodeMater
     this.quaternion.copy(quaternionWorldSpace)
 
     // Update geometry
-    this.geometry.updateFromDomElement(this.element)
+    const metrics = collectDomTextMetrics(this.element)
+    this.geometry.update(metrics)
+    this.material.update(metrics)
   }
 }

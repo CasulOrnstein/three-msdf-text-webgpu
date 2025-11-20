@@ -31,6 +31,10 @@
   /* -webkit-text-stroke-width: 1px; */
 }
 
+#test-text.show {
+  color: rgba(255,0,0);
+}
+
 #app {
   width: 100dvw;
   height: 100dvh;

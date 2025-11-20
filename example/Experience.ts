@@ -40,6 +40,7 @@ export class Experience {
   private camera!: Camera;
 
   private initialised: boolean = false;
+  private domElement: HTMLElement = document.getElementById('test-text')!
 
   private msdfTextMesh!: MSDFText
   private syncMsdfTextMesh!: SyncMSDFText
@@ -49,6 +50,7 @@ export class Experience {
 
   public showSyncMsdfText: boolean = false
   public showBoundingBox: boolean = false
+  public showDomElement: boolean = false
 
   private font!: Font;
   private fontAtlas!: THREE.Texture
@@ -56,6 +58,7 @@ export class Experience {
   private textureLoader = new THREE.TextureLoader();
 
   private standaloneMeshFolder: FolderApi | undefined
+  private domSyncMeshFolder: FolderApi | undefined
 
   public msdfTextOptions: MSDFTextOptions = {
     text: "MSDF Text",
@@ -93,8 +96,7 @@ export class Experience {
       this.msdfTextMesh.position.set(-1, 0, 0) // Somewhat center the text (it has a top left pivot)
       this.scene.add(this.msdfTextMesh)
 
-      const textElement = document.getElementById('test-text')!;
-      this.syncMsdfTextMesh = new SyncMSDFText(textElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
+      this.syncMsdfTextMesh = new SyncMSDFText(this.domElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
       this.syncMsdfTextMesh.visible = this.showSyncMsdfText
       this.syncMsdfTextMesh.update(this.camera.instance)
       this.scene.add(this.syncMsdfTextMesh)
@@ -116,6 +118,9 @@ export class Experience {
         if (this.standaloneMeshFolder) {
           this.standaloneMeshFolder.hidden = this.showSyncMsdfText
         }
+        if (this.domSyncMeshFolder) {
+          this.domSyncMeshFolder.hidden = !this.showSyncMsdfText
+        }
       })
 
       Debug.pane?.addBinding(this, 'showBoundingBox', { label: 'Show Bounding Box'}).on('change', () => { this.updateBoundingBoxVisibilty() })
@@ -133,6 +138,14 @@ export class Experience {
       
       this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'isSmooth', { label: 'Is Smooth? (small text)'})
       this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'threshold', { label: 'Smoothing Threshold', min: 0, max: 1 })
+    
+      this.domSyncMeshFolder = Debug.pane?.addFolder({ title: 'DOM-Synced Text Options', hidden: !this.showSyncMsdfText })
+      this.domSyncMeshFolder?.addBinding(this, 'showDomElement', { label: 'Show DOM Element' }).on('change', (val) => {
+        if (val.value) { this.domElement.classList.add('show')
+        } else { this.domElement.classList.remove('show') }
+      })
+      this.domSyncMeshFolder?.addButton({ title: 'Sync with DOM', label: 'Adjust the CSS props of the element in DevTools then ->' }).on("click", () => { this.updateMSDFText() })
+
     });
   }
 

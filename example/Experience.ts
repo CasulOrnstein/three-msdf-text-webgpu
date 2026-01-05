@@ -76,7 +76,9 @@ export class Experience {
       widthPx: 500,
       lineHeightPx: 50,
       letterSpacingPx: 0,
-      whiteSpace: 'normal'
+      whiteSpace: 'normal',
+      textAlign: 'left',
+      verticalAlign: 'top'
     }
   }
 
@@ -102,7 +104,7 @@ export class Experience {
       this.msdfTextMesh.material.side = THREE.DoubleSide
       this.msdfTextMesh.visible = !this.showSyncMsdfText
       this.msdfTextMesh.scale.set(0.01, 0.01, 1)
-      this.msdfTextMesh.position.set(-1, 0, 0) // Somewhat center the text (it has a top left pivot)
+      this.msdfTextMesh.position.set(0, 0, 0)
       this.scene.add(this.msdfTextMesh)
 
       this.syncMsdfTextMesh = new SyncMSDFText(this.domElement, { atlas: this.fontAtlas, data: this.font.data as unknown as BMFontJSON })
@@ -160,7 +162,9 @@ export class Experience {
       this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'lineHeightPx', { label: 'Line Height (px)', min: 10, max: 100 }).on('change', () => this.updateMSDFText() )
       this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'letterSpacingPx', { label: 'Letter Spacing (px)', min: -5, max: 5 }).on('change', () => this.updateMSDFText() )
       this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'whiteSpace', { label: 'Whitespace', options: { normal :'normal', pre: 'pre', nowrap: 'nowrap' } }).on('change', () => this.updateMSDFText() )
-      
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'textAlign', { label: 'Text Align', options: { left: 'left', center: 'center', right: 'right' } }).on('change', () => this.updateMSDFText() )
+      this.standaloneMeshFolder?.addBinding(this.msdfTextOptions.textStyles!, 'verticalAlign', { label: 'Vertical Align', options: { top: 'top', center: 'center', bottom: 'bottom' } }).on('change', () => this.updateMSDFText() )
+
       this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'color', { label: 'Color' })
       this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'opacity', { label: 'Opacity', min: 0,  max: 1 })
       

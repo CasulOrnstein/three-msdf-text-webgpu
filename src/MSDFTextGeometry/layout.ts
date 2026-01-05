@@ -149,6 +149,9 @@ export function layoutText(options: LayoutOptions) {
     const lineStart = line.start;
     const lineEnd = line.end;
 
+    // Collect glyphs for this line first (to calculate line width before applying alignment)
+    const lineGlyphs: LayoutGlyph[] = [];
+
     // Add glyphs per line
     let lastGlyph: BMFontChar | null = null;
     for (let i = lineStart; i < lineEnd; i++) {
@@ -173,7 +176,7 @@ export function layoutText(options: LayoutOptions) {
           y: glyphBottom + yOffset,
       }
 
-      layoutGlyphs.push({
+      lineGlyphs.push({
           index: glyphIndex++,
           char: glyph.char || String.fromCharCode(charCode),
           code: charCode,
@@ -191,12 +194,42 @@ export function layoutText(options: LayoutOptions) {
       penX += glyph.xadvance * fontSizeScale + metrics.fontCssStyles.letterSpacingPx;
       lastGlyph = glyph;
     }
+
+    // Calculate alignment offset based on textAlign
+    const textAlign = metrics.fontCssStyles.textAlign;
+    let alignmentOffset = 0;
+    if (textAlign === 'center') {
+      alignmentOffset = (metrics.widthPx - lineWidth) / 2;
+    } else if (textAlign === 'right' || textAlign === 'end') {
+      alignmentOffset = metrics.widthPx - lineWidth;
+    }
+    // 'left', 'start', or default: offset = 0
+
+    // Apply alignment offset and add to final array
+    for (const glyph of lineGlyphs) {
+      glyph.bottomLeftPosition.x += alignmentOffset;
+      layoutGlyphs.push(glyph);
+    }
   });
+
+  const layoutHeight = fontLineHeight * lines.length;
+  const layoutWidth = metrics.widthPx;
+
+  // Calculate alignment offsets based on text/vertical align
+  const { textAlign, verticalAlign } = metrics.fontCssStyles;
+  const verticalOffset = verticalAlign === 'center' ? layoutHeight / 2 : verticalAlign === 'bottom' ? layoutHeight : 0;
+  const horizontalOffset = textAlign === 'center' ? -layoutWidth / 2 : (textAlign === 'right' || textAlign === 'end') ? -layoutWidth : 0;
+
+  // Apply alignment offsets to all glyphs
+  for (const glyph of layoutGlyphs) {
+    glyph.bottomLeftPosition.x += horizontalOffset;
+    glyph.bottomLeftPosition.y += verticalOffset;
+  }
 
   return {
       glyphs: layoutGlyphs,
       lines,
-      width: metrics.widthPx,
-      height: fontLineHeight * lines.length,
+      width: layoutWidth,
+      height: layoutHeight,
   };
 }
